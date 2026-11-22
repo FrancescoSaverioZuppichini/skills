@@ -11,22 +11,47 @@ Read `models/minimax-h3.md` first (the H3 format). Render setup, evidence and hi
 4. **Motion comes from the video.** Moves are plain prose in playback order; timestamps appear only at cuts.
 5. **Fixed text is copied word for word.** Only `{SLOTS}` change.
 
-## Steps
-Work in an empty folder (`<dir>`). The cv-tools commands run from the cv-tools folder with its own Python (`.venv/bin/python`); the audit is plain Python and runs anywhere, on a folder that holds only prompt `.txt` files.
+## Workflow
+Copy this block, set the four variables, run it step by step. Paths are absolute because cv-tools runs from its own folder.
 
-1. **Look at the whole clip:** `python -m cv_tools.shots --input source.mp4 --output <dir>/full` ([cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools)). Its strips show the clip; its `shots.json` shows any cuts.
-2. **Pick and cut the window:** the window you were given, otherwise the first 3 s where she's in frame, inside one shot. 73 frames (3.04 s) at 24 fps, 736×1312. A source that isn't 9:16 is cropped to fill (sides or top/bottom are lost); from here on, write only from the cropped window.
-   ```
-   ffmpeg -ss <start> -i source.mp4 -t 3.042 -vf "fps=24,scale=736:1312:force_original_aspect_ratio=increase,crop=736:1312" -frames:v 73 -af apad=whole_dur=3.042 -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 window.mp4
-   ```
-3. **Shots and frames of the window:** `python -m cv_tools.shots --input window.mp4 --output <dir>/window`. It writes `shots.json` and one strip per shot, `shot-N.png`: every 6th frame (0.25 s at 24 fps) plus the shot's last frame, left to right, top row first (frame numbers in `strip_frames`). **One shot: the template as is, no timestamps. Several: the multi-shot variant, `{TIME}` = each later shot's `start`.** Two adjacent frames that jump to a different angle or place are a cut too, whatever the score; a pan slides the same place across the frame and is not a cut.
-   Wherever her hands or head move between two strip frames, look closer at every 2nd frame of that range (`<a>`–`<b>` = its frame numbers):
-   `ffmpeg -i window.mp4 -vf "select='between(n,<a>,<b>)*not(mod(n,2))',scale=480:-2,tile=7x2" -frames:v 1 -vsync 0 dense.png`
-4. **Sound:** `ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 window.mp4`.
-   - Prints nothing: **silent source.** Use the no-sound variant with the silent-source soundscape (below).
-   - Has audio: listen if you can; otherwise read `ffmpeg -i window.mp4 -lavfi showspectrumpic=s=1024x256:legend=0 spec.png` (stacked bands = a voice or singing, a regular beat = music). `{SOUND}` names the kinds of sound in order ("a short voice line, then loud music", "a voice singing over music"). Speech and lyrics are never transcribed.
-5. **Fill the slots** from the window's strips and close-ups.
-6. **Audit:** save the prompt as `<name>.txt`, run `python3 scripts/h3_audit.py <dir>` (exits 1 on any miss), then reread every move against the strips (checklist 10–12).
+```bash
+SRC=/abs/path/source.mp4                 # the source clip
+OUT=/abs/path/work/clip1                 # an empty work folder
+CV=/abs/path/cv-tools                    # cv-tools checkout (has .venv)
+SKILL=/abs/path/prompt-writing           # this skill
+mkdir -p "$OUT/prompts"
+
+# 1. Look at the whole clip: strips in $OUT/full/shot-N.png, cuts in $OUT/full/shots.json
+(cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$SRC" --output "$OUT/full")
+
+# 2. Cut the 3 s window: 73 frames at 24 fps, 736x1312 (START in seconds, inside one shot)
+START=0
+ffmpeg -y -ss $START -i "$SRC" -t 3.042 \
+  -vf "fps=24,scale=736:1312:force_original_aspect_ratio=increase,crop=736:1312" -frames:v 73 \
+  -af apad=whole_dur=3.042 -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/window.mp4"
+
+# 3. Shots and strips of the window: $OUT/window/shots.json + shot-N.png (every 6th frame = 0.25 s)
+(cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$OUT/window.mp4" --output "$OUT/window")
+
+# 3b. Close-up of a fast move: every 2nd frame from A to B (repeat for each fast range)
+A=0; B=26
+ffmpeg -y -i "$OUT/window.mp4" -vf "select='between(n,$A,$B)*not(mod(n,2))',scale=480:-2,tile=7x2" \
+  -frames:v 1 -vsync 0 "$OUT/dense-$A-$B.png"
+
+# 4. Sound: no output = silent source; otherwise read the spectrogram
+ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$OUT/window.mp4"
+ffmpeg -y -i "$OUT/window.mp4" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
+
+# 5. Write the prompt to $OUT/prompts/<name>.txt (template below), then audit (exit 1 = fix and rerun)
+python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts"
+```
+
+What to decide at each step:
+1. **Whole clip:** where she's in frame, and where the cuts are.
+2. **Window:** the one you were given, otherwise the first 3 s where she's in frame, inside one shot. A source that isn't 9:16 is cropped to fill (sides or top/bottom are lost); from here on, write only from the window. **Never write the aspect ratio or resolution in the prompt:** it is set by the render's width and height (736×1312 here). MiniMax's README lists Ref2VA's ratio as "adaptive" (it follows the inputs), its prompt rewriter returns `ratio` as a separate field, and no official prompt names a ratio.
+3. **Shots:** **one shot = the template as is, no timestamps. Several = the multi-shot variant, `{TIME}` = each later shot's `start` in `shots.json`.** Two adjacent frames that jump to a different angle or place are a cut too, whatever the score; a pan slides the same place across and is not a cut. Strips read left to right, top row first; frame numbers are in `strip_frames`. Wherever her hands or head move between two strip frames, run 3b on that range.
+4. **Sound:** silent source = the no-sound variant with the silent-source soundscape (below). With audio: listen if you can; in the spectrogram stacked bands are a voice or singing, a regular beat is music. `{SOUND}` names the kinds of sound in order ("a short voice line, then loud music", "a voice singing over music"); speech and lyrics are never transcribed.
+5. **Prompt:** fill the slots from the strips and close-ups; after the audit passes, reread every move against the strips (checklist 10–12). Only prompt `.txt` files go in `$OUT/prompts`.
 
 ## Per-sheet values (the sheet in use, copied verbatim; a new sheet gets its own)
 - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
