@@ -137,3 +137,26 @@ The line's goal and number, what is already known (numbers, paths, links), the p
 - **Several machines:** each student always runs on the same machine. The fast machine is production: full-length runs and integrating winning levers. The slower one is the bench: short A/B tests of new levers against its own baseline of the same job. Each machine gets its own baseline, its own lock and its own queue in SCHEDULE.md, and its own row in the index.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context, that reads the page as a computer-science graduate outside the field and lists everything missing, unexplained, oddly worded or strange (a term never defined, a number without its unit or baseline, a figure without a caption, English that reads badly). Hand the list to the authors, fix, and repeat until nothing serious is left.
 - Save owner decisions and durable lessons in memory, not details the files already hold.
+
+### The index section (always, first on the page)
+
+```mdx
+<Section id="index" title="Index · N students, N mini papers" open>
+**Start here:** [▶ Watch first](<link>#watch) · [Program](<link>#program) · [Survey](<link>#survey)
+
+### 📄 [student-a](<link>#student-a): short title
+**Question:** the one question this student's paper answers.
+**Result so far:** one sentence with the headline number (or "running: …").
+*GPU or machine · model*
+
+### 📄 [student-b](<link>#student-b): short title
+**Question:** …
+**Result so far:** …
+*GPU or machine · model*
+
+---
+**Scheduling:** one line on which machine does what.
+</Section>
+```
+
+Take `<link>` from `/api/check`'s `links`. Keep one block per student, in the order the owner should read them, and rewrite a block's result line the moment its number lands.
