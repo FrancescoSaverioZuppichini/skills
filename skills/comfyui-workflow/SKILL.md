@@ -39,10 +39,13 @@ Say plainly what changed, and that the user should reopen the tab.
 ComfyUI runs graphs in **API format** (a flat map of nodes and inputs), not the UI file. `scripts/run_workflow.py` converts the saved UI workflow on the fly with the server's `/object_info`, so code runs exactly what's in the menu.
 
 ```bash
-python3 scripts/run_workflow.py <workflow name or path.json> \
-  --set "<node title>.<input>=<value>" ...     # repeat per input; values are JSON when they parse (7, true, "x")
-  [--server http://127.0.0.1:8188]             # default
-  [--dry]                                      # print the API prompt instead of running it
+python3 scripts/run_workflow.py <workflow name | path.json | all> [options]
+  --set "<node title>.<input>=<value>"   # repeat; JSON values when they parse (7, true, "x"); "@/local/file" uploads a file
+  --group "<group title>=on|off|mute"    # switch a group
+  --list                                 # every settable input with its current value, plus each group's state
+  --check --comfyui <ComfyUI folder>     # convert and run ComfyUI's own validator on the CPU: no server, no GPU
+  --dry                                  # print the API prompt instead of running it
+  --server http://127.0.0.1:8188         # default
 ```
 
 - It posts `/prompt`, waits on `/history/<prompt_id>`, and prints every output file and the wall time.
