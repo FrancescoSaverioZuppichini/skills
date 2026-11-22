@@ -119,7 +119,15 @@ The line's goal and number, what is already known (numbers, paths, links), the p
   - If it is already published, the line becomes "adopt and measure", and the page cites the paper.
   - If a paper contradicts it, re-test before anything builds on it.
   - Audit work done so far the same way: earlier conclusions in PLAN.md are re-checked when a newer paper touches them.
-- **Metric judges are advisory, never a kill gate.** A lever dies only for one of two reasons. Either the frames visibly get worse, judged by eye on a side by side, with the owner's eye final. Or it fails to give its speed or memory gain. Before any metric bar exists, measure the noise: a second seed of the same job, numerics-only arms, the same seed on another GPU. Report every delta as "within noise" or "worse than noise". Small deltas from one render per arm (e.g. identity −0.02, a sharpness score −6 %) are noise, not a verdict. A tight numeric bar that kills a working lever is a recurring failure, so don't set one.
+- **Judge gross defects, not small scores.** The automatic judge looks only for clear, measurable failures, each against the source or the baseline:
+  - pose off (body or hand keypoints far from the source's);
+  - a missing, extra or broken arm, hand or limb;
+  - the face missing or turning back into the source person;
+  - drawn guide lines, subtitles or overlays painted in;
+  - a big timing slip (a move clearly early or late);
+  - a visible jump at a join.
+
+  A lever dies only for one of those, for a visible loss on a side by side (the owner's eye final), or for no speed or memory gain. Small score deltas (identity −0.02, sharpness −5 %) are never a verdict, so never set a kill bar on them. A tight numeric bar that kills a working lever is a recurring failure.
 - Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.
