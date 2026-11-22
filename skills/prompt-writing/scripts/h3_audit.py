@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Audit H3 swap prompts (blur + drawn pose, full redraw): the checklist + the fixed template text copied verbatim.
+# Audit H3 swap prompts: the task checklist (items 1-9 of tasks/character-swap.md) + the fixed template text copied verbatim.
 # A prompt whose <Subject 1> says "only her face, identity and hair" is checked against tasks/face-swap.md, any other against tasks/character-swap.md.
 # One shot: no timestamp anywhere. Several shots: the task's multi-shot variant ([Shot 1] bare, [Shot N] At MM:SS.mmm, increasing).
 # Usage: h3_audit.py <dir with .txt prompts>   Exits 1 if any prompt fails any check. Importable: audit(text), template(task, shots).
@@ -7,16 +7,14 @@ import glob, os, re, sys
 
 read_task = lambda name: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tasks", name + ".md")).read()
 TASKS = {"character": read_task("character-swap"), "face": read_task("face-swap")}
-# [Agent] Whole words only: "card" must not fire on "cardigan" or "discard", nor "lines" on lane lines in a scene.
-STICK = r"\b(stickers?|overlays?|captions?|speech bubbles?|on-screen|cards?)\b"
-# [Agent] Rule 8 for any clip: common garment, footwear, jewellery and accessory words. The character's own outfit text is removed
-# first, so naming her outfit never trips it. A word list cannot be complete; rule 8 is still checked by eye.
-OLD = (r"\b(corsets?|garters?|chokers?|stockings?|pvc|latex|tattoos?|blouses?|necklaces?|pendants?|buns?|ponytails?|updo|braids?|"
-       r"sneakers?|trainers|boots?|heels|sandals|shoes|socks|jeans|trousers|pants|sweatpants|joggers|leggings|shorts|hoodies?|"
-       r"sweaters?|jumpers?|cardigans?|jackets?|coats?|t-shirts?|tank tops?|crop tops?|sports bras?|bras?|bikinis?|dress|dresses|"
-       r"earrings?|bracelets?|rings?|lanyards?|gloves?|glasses|sunglasses|hats?|scrunchies?|hair ties?|belts?)\b")
-# [Agent] Anything that names the drawing on the input: naming it, even to exclude it, is what made H3 paint it.
-GUIDE = r"\bskeleton|\bkeypoints?\b|\bguides?\b|\bdrawn\b|\bdrawing\b|\b(face|white|coloured|colored|pose) (dots|marks)\b|\bdots\b|\b(pose|drawn) lines?\b"
+# [Agent] The banned words live once, in the task file's "Banned words" list, so the writer and the audit can never disagree.
+# Whole words only: "card" must not fire on "cardigan", and scene words like "parking lines" stay allowed.
+def banned(kind):
+    words = re.search(r"- " + kind + r": `([^`]*)`", TASKS["character"]).group(1).split(", ")
+    return r"\b(" + "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True)) + r")\b"
+
+
+STICK, GUIDE, OLD = banned("overlays"), banned("drawing"), banned("source wear")
 OUTFIT = re.search(r"- `\{OUTFIT\}`: `([^`]*)`", TASKS["character"]).group(1).lower()
 # [Agent] 750 words for one shot; each later shot adds its fixed block (~35 words) and its own moves.
 MAX_WORDS, PER_LATER_SHOT = 750, 150
@@ -70,6 +68,14 @@ def shots_ok(dd):
             and len(re.findall(r"\b\d{2}:\d{2}(\.\d+)?\b", dd)) == len(tags) - 1), len(tags)
 
 
+def sound_ok(t, su, vret):
+    keeps = "[video editing + audio reuse]" in su
+    if keeps:
+        return "(shot length and original sound)" in vret and "The original sound of <Video 1>:" in t
+    return ("original sound" not in t.lower() and "(shot length): partially_preserved - the shot length remains" in vret
+            and su.strip().startswith("[video editing]"))
+
+
 def audit(t):
     tl = t.lower()
     sd, ra, su, dd = (sec(t, k) for k in ("subject_definitions", "retention_analysis", "summary", "detailed_description"))
@@ -82,24 +88,26 @@ def audit(t):
     vdef = " ".join(l for l in sd.splitlines() if l.startswith("<Video 1>")).lower()
     vret = " ".join(l for l in ra.splitlines() if l.startswith("<Video 1>"))
     c = {
-        "1 no stickers/overlays": not re.search(STICK, tl),
-        "2 drawing never named": not re.search(GUIDE, tl),
-        "3 Video1 = blur, never appears": "heavy blur" in vdef and "never appears" in vdef,
-        "4 Video1 partially, not kept": "partially_preserved" in vret and "not kept" in vret.lower(),
-        "5 summary: blur not part": bool(re.search(r"blur[^.]*not part", su.lower())),
-        "6 clean line": "the picture is clean, with no blur anywhere" in dd.lower(),
-        "7 skin tone": "colour of the blur" in tl or "color of the blur" in tl,
-        "8 source garments unnamed": not re.search(OLD, tl.replace(OUTFIT, "")),
-        "9 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
-        "10 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
-        "11 shots + timestamps": shots_pass,
-        "length <= 750 (+150 per later shot) words": len(t.split()) <= MAX_WORDS + PER_LATER_SHOT * max(n - 1, 0),
+        "1 banned: overlays": not re.search(STICK, tl),
+        "1 banned: drawing": not re.search(GUIDE, tl),
+        "2 Video1 = blur, never appears": "heavy blur" in vdef and "never appears" in vdef,
+        "3 Video1 partially, not kept": "partially_preserved" in vret and "not kept" in vret.lower(),
+        "4 summary: blur not part": bool(re.search(r"blur[^.]*not part", su.lower())),
+        "5 clean line": "the picture is clean, with no blur anywhere" in dd.lower(),
+        "5 skin tone": "colour of the blur" in tl or "color of the blur" in tl,
+        "1 banned: source wear": not re.search(OLD, tl.replace(OUTFIT, "")),
+        # [Agent] The two sound variants are all-or-nothing: either every original-sound line is there, or none is.
+        "4 sound lines match one variant": sound_ok(t, su, vret),
+        "6 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
+        "6 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
+        "7 shots + timestamps": shots_pass,
+        "9 length <= 750 (+150/later shot)": len(t.split()) <= MAX_WORDS + PER_LATER_SHOT * max(n - 1, 0),
         # [Agent] The outfit sentence dresses her in the sheet's outfit: required in every shot of a character swap (nude jeans
         # renders without it), wrong for a face-only swap, where she keeps her own clothes.
-        "14 outfit sentence per shot": tl.count("she wears the outfit of <subject 1> in every frame:") == (n if kind == "character" else 0),
+        "8 outfit sentence per shot": tl.count("she wears the outfit of <subject 1> in every frame:") == (n if kind == "character" else 0),
     }
     miss = [x for x in fixed if norm(x) not in norm(t)] + [x for x, rx in slotted if not rx.search(norm(t))]
-    c["13 fixed text verbatim"] = not miss
+    c["9 fixed text verbatim"] = not miss
     return c, miss, kind, n
 
 

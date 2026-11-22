@@ -1,6 +1,6 @@
 # MiniMax H3: the common prompt format (every task)
 
-Source: MiniMax's official full-reference guide (link in `references/README.md`; it has no licence, so it is linked, not copied). This file is the short version. Each task's H3 subsection builds on it.
+Source: `references/h3-official-ref-guide.md` (MiniMax, verbatim). This file is the short version. Each task's H3 subsection builds on it.
 
 ## How H3 prompts are made
 - H3 is trained on prompts written by MiniMax's closed rewriter, H3-Context-IR. It reads a short request plus the inputs and writes the long prompt. MiniMax calls that step "critical to the quality of the final output".
@@ -42,6 +42,6 @@ A label keeps the same meaning in every section.
   - `weak_reference`.
 
 ## Description rules
-- "As detailed and explicit as possible." For generation tasks, 350–500 words. For editing, the length scales with the source clip.
+- "As detailed and explicit as possible." For generation tasks, 350–500 words. For editing tasks, the task file sets the length.
 - Shots: `[Shot 1]` opens the description with no timestamp; each later shot starts `[Shot N] At MM:SS.mmm,` at its cut, times increasing (official §5.1). A single shot has no timestamp. Dialogue goes inside `<d>[Language] …</d>`, with the speaker id `(S1)`.
 - Write in English, except dialogue, lyrics and visible on-screen text.

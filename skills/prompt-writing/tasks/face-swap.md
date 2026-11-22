@@ -17,7 +17,7 @@
 ---
 
 ## MiniMax H3 video (Singularity + Pika)
-Read `models/minimax-h3.md` first, then the character swap's H3 subsection. Its **Model and settings**, **Workflow** steps 1–2 and **Writing the slots** apply here unchanged unless this section says otherwise.
+Read `models/minimax-h3.md` first, then `tasks/character-swap.md`. Its **Steps** 1–3, **Writing the slots** and banned words apply here (render setup: `references/character-swap-history.md`) unchanged unless this section says otherwise.
 
 ### What differs from the character swap
 | | Character swap | Face only |
@@ -27,7 +27,7 @@ Read `models/minimax-h3.md` first, then the character swap's H3 subsection. Its 
 | `<Picture 1>` | the dressed character sheet | the same dressed sheet. The 17 Nov runs used an undressed sheet of the same character; no face-only render with the dressed sheet exists yet |
 | `<Subject 1>` | face, identity, hair, body shape, outfit | only her face, identity and hair |
 | `<Subject 2>` | her performance only | the woman herself: body, clothes, jewellery and performance |
-| Outfit sentence | required (checklist 14) | never |
+| Outfit sentence | required (character-swap checklist 8) | never |
 
 ### Inputs
 - `<Video 1>` = `guide.mp4` from `python -m cv_tools.motion_guide` ([cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools)) `--input <window.mp4> --output <dir> --mask-prompt "head, hair" --mask-grow 0.02`, fed at 368×656 with the window's audio.
