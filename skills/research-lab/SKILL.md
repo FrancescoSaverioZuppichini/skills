@@ -141,6 +141,8 @@ The line's goal and number, what is already known (numbers, paths, links), the p
 
 ### The index section (always, first on the page)
 
+A full example page (index, watch first, program, one mini paper) is in `example.md` next to this file.
+
 ```mdx
 <Section id="index" title="Index · N students, N mini papers" open>
 **Start here:** [▶ Watch first](<link>#watch) · [Program](<link>#program) · [Survey](<link>#survey)
