@@ -2,12 +2,11 @@
 
 **Goal:** the character's face and hair replace the source woman's face and hair. Her body, clothes, jewellery, motion, expression timing, scene and camera stay the source's.
 
-**Only when the user asks for it, and only with the consent of the person on screen.** It keeps a real person's body and puts another face on it. The default for every swap is the whole person (`video-character-swap.md`); never propose this route.
+**Only when the user asks for it.** The default for every swap is the whole person (`video-character-swap.md`); never propose this route.
 
 **Model:** MiniMax H3 (`models/minimax-h3.md`). Everything in `video-character-swap.md` applies unless this file says otherwise: the steps, "Writing the slots", the banned words, the checks.
 
 ## Before you start: ask if unsure
-- Did the user ask for a face-only swap, and does the person on screen consent?
 - Which clip, and which part (whole clip by default)?
 - Which character sheet? Default: the dressed sheet the workflow loads.
 - Keep the clip's sound? Default yes.

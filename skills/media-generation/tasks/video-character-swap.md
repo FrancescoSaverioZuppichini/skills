@@ -9,10 +9,10 @@
 - Which character sheet? Default: the dressed sheet the workflow loads.
 - A new outfit? An outfit picture means dressing the sheet first (step 0).
 - Keep the clip's sound? Default yes. A clip without an audio track needs the no-sound variant: what should it sound like?
-- Is her face small or far in the frame? Offer REFINE.
-- Do hands or hair smear in fast moves? Offer DE-ROPE (slower).
 - Which seed(s)?
 - Do you want to see the inputs (guide, sheet, prompt) before the render?
+
+**REFINE and DE-ROPE stay off; never ask about them.** Suggest REFINE only when the user complains about a soft or low-quality face. Suggest DE-ROPE only when the user brings it up or complains about the motion (smear, wobble, a wrong head turn).
 
 ## Steps
 Run cv-tools where it is installed (the GPU machine); look at the strips wherever you are. Over ssh, `ssh <host> 'bash -s' <<'EOF'` … `EOF` keeps the variables remote.
@@ -229,6 +229,6 @@ $RUN minimax-h3-reference-to-video \
 - 2026-11-22 · Masked refine = full refine on faces, identity, pose and seams at 67–77 % of its time (2 clips). Medium.
 - 2026-11-13 · Long clips drift more: 8.4 s, pose good on 2 of 4 seeds; try another seed. Never a reason to cut. Medium.
 - 2026-11-22 · Multi-shot tags hold shot 1's framing to the cut; prose invented a camera swing before it. Medium (1 seed).
-- 2026-11-02 / 11-13 · De-RoPE fixes fast-motion smear and locks head pose (5 of 5) at 3–4× the time; it does nothing for small faces; at inject 0.67 it re-decided the pose. The user once ruled it always on (turbo-LoRA era); the workflow ships it off. Ask. Medium.
+- 2026-11-02 / 11-13 · De-RoPE fixes fast-motion smear and locks head pose (5 of 5) at 3–4× the time; it does nothing for small faces; at inject 0.67 it re-decided the pose. Off by default; suggested only when the user complains about the motion (rule, 2026-11-22). Medium.
 - 2026-11-19 · Guide fed at 432 or full size instead of half: no visible change, +7 % / +80 % time. Medium.
 - Open: stickers and captions vanish in the redraw; short bob on one clip after the wider blur; barefoot (the sheet has no shoes); sheet details leak (a studded wristband).
