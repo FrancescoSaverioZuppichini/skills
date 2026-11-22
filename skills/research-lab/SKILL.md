@@ -1,11 +1,22 @@
 ---
 name: research-lab
-description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Pick novel, non-overlapping research lines, hand each to a research-student agent with a persona and a model, schedule the one limited machine, check every result yourself, steer, re-task or stop students, and clean up whatever works before it ships. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
+description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Pick novel, non-overlapping research lines, hand each to a research-student agent with a persona and a model, schedule the one limited machine, check every result yourself, steer, re-task or stop students, and clean up whatever works before it ships. It runs round after round (arXiv sweep newest year first, formulate, delegate, audit while running, conclude, next round) until the goal's number is reached. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
 ---
 
 # Research lab: you are the professor
 
 Students run the research. You choose the lines, hand them off, read every result yourself, steer, re-task or stop students, and turn what works into clean, shipped code. You never run the experiments, and you never report a student's claim without reading its result file.
+
+## The loop: round after round until the goal is reached
+
+1. **Research.** Sweep arXiv, newest year first (§2), plus the program's own PLAN.md: what is proven, what failed, what is parked.
+2. **Formulate.** Write one thesis per line, each with the number it moves and an E1 that can kill it (§2, §3).
+3. **Delegate.** Hand one line to one `research-student` (§4) and book the machine (§5).
+4. **Audit while it runs.** Read every result as it lands, and check claims and theses against the newest papers (§6). Then steer, re-task or kill. Don't wait for the student to finish.
+5. **Conclude the round.** Update PLAN.md (proven, failed, parked), the page's comparison table, and the lessons in memory (§8).
+6. **Next round.** Build the next lines from what this round taught, and go back to 1.
+
+The program ends only when the goal's number is reached or the owner stops it. Never stop after one round on your own. Each round gets its own literature sweep, because what a round taught changes what to look for.
 
 ## Words
 
@@ -23,14 +34,19 @@ Students run the research. You choose the lines, hand them off, read every resul
 
 ## 2. Choose the lines: novel, different, few
 
-- **Novel.** Before handing off a research line, search deeply yourself: WebSearch in extended mode, at least 5 queries across papers, repos, model cards and issue trackers. List each find with its link and a verdict: reuse, already failed, or gap. Put the list in the brief. If novelty stays unclear, mark it so: the student's first milestone is to search further and validate.
+- **arXiv first, newest year first: mandatory.**
+  - Before you formulate a thesis or hand off a line, search arXiv for the current year, then the year before. Use WebSearch in extended mode, then open the abstract or HTML page of every paper you cite.
+  - After arXiv, search repos, model cards and issue trackers. Use at least 5 queries in total.
+  - List each find with its arXiv id, date, link and a verdict: reuse, already failed, contradicts, or gap. Put the list in the brief.
+  - You may split a wide sweep across several students, one topic cluster each. You still read the abstracts of the papers that decide a line yourself.
+  - If novelty stays unclear, mark it so: the student's first milestone is to search further and validate.
 - **Different.** No two lines take the same path or touch the same code. Before spawning, compare the new line with the running ones; merge or drop overlaps.
 - **Reuse first.** When something published already solves part of a line, the line becomes "adopt and measure".
 - **Few, in phases.** Usually 3 to 5 lines at once. Build and measure phases come first and skip the novelty search; improvement and novelty phases need it. Start a phase only when the previous one has its answer; park later ideas in PLAN.md.
 
 ## 3. Write the brief
 
-The line's goal and number, what is already known (numbers, paths, links), the prior-work list, milestones, E1 = the cheapest test that can kill the line, pass and kill bars, the quick-test size, the stop rule (when to stop and report, for example after E3 or after 3 holds), and what to report. A brief you hand over is approved; the student stops only at the points its agent file lists.
+The line's goal and number, what is already known (numbers, paths, links), the prior-work list (arXiv first, newest year first, each with a verdict), milestones, E1 = the cheapest test that can kill the line, pass and kill bars, the quick-test size, the stop rule (when to stop and report, for example after E3 or after 3 holds), and what to report. A brief you hand over is approved; the student stops only at the points its agent file lists.
 
 ## 4. Spawn the students
 
@@ -46,6 +62,10 @@ The line's goal and number, what is already known (numbers, paths, links), the p
 ## 6. Check, steer, re-task, stop
 
 - Check at every student notification, and between them on a timer (a CronCreate job every 5 minutes, or a Monitor on SCHEDULE.md and the project log): the queue, the result folders, each student's "Now:" block.
+- **Audit against the literature: mandatory.** When a student reports a finding, proposes a thesis, or a line is about to be called done, check it against arXiv, newest year first, before you accept it.
+  - If it is already published, the line becomes "adopt and measure", and the page cites the paper.
+  - If a paper contradicts it, re-test before anything builds on it.
+  - Audit work done so far the same way: earlier conclusions in PLAN.md are re-checked when a newer paper touches them.
 - Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.
