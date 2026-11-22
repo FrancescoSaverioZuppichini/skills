@@ -36,10 +36,8 @@ One route: her blurred + the pose drawn on top, full redraw, the prompt never na
 
 ### Workflow
 1. **Cut the window** at 24 fps and 736×1312, with its audio. Run `motion_guide` on exactly that window.
-   **Find its shots:** ffmpeg's scene score (`-vf "select='gte(scene,0)',metadata=print:file=-"`) of 0.3 or more on a frame starts a new shot there; a shot shorter than 12 frames (0.5 s) joins the one before. One shot: the template as is. Several: the multi-shot variant.
-2. **Frame strip for the writer**, by index, never fast `-ss` seek (two encodes seek to different moments):
-   `ffmpeg -i clip.mp4 -vf "fps=24,trim=start=<S>:duration=<D>,setpts=PTS-STARTPTS,select=not(mod(n\,6)),scale=480:-2,tile=7x2" -frames:v 1 -vsync 0 strip.jpg`
-   Frame k is at k × 0.25 s, read left to right, top row first; `<D>` = the window plus one frame (3.042 for 3 s). 480 px is the smallest size where hands and gaze read.
+   **Find its shots:** `python -m cv_tools.shots --input window.mp4 --output <dir>` ([cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools)). It writes `shots.json` (each shot's start and end frame and its `start` as `MM:SS.mmm`) and one frame strip per shot, `shot-N.png`. Rule inside: a scene score of 0.3 or more starts a new shot; no shot is shorter than 12 frames (0.5 s). **One shot: the template as is, no timestamps. Several: the multi-shot variant, with `{TIME}` = each later shot's `start` from `shots.json`.** A new angle inside the same room scores lower and is untested, so look at the strips when the clip might have one.
+2. **Frame strip for the writer:** `shot-N.png` from step 1, frames picked by index (every 6th = 0.25 s at 24 fps, plus each shot's last frame; the frame numbers are in `shots.json` → `strip_frames`), 480 px wide, the smallest size where hands and gaze read. Never fast `-ss` seek: two encodes seek to different moments.
 3. **The writer fills the slots** of the template below from the strip, following "Writing the slots". `{OUTFIT}`, `{CHARACTER_LINE}` and `{OUTFIT_LOCK}` are written once per character sheet and then fixed; our test character's:
    - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
    - `{CHARACTER_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`

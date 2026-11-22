@@ -29,4 +29,5 @@ Add a task as `tasks/<task>.md`, laid out as: goal → rules for the task on any
 
 ## Scripts
 - `scripts/h3_audit.py <dir>`: checks the checklist and that the fixed template text is copied word for word, on every `.txt` prompt in `<dir>`. A prompt whose `<Subject 1>` says "only her face, identity and hair" is checked against the face-swap template, any other against the character-swap one. One shot must carry no timestamp; several shots must follow the task's multi-shot variant (`[Shot 1]` bare, `[Shot N] At MM:SS.mmm,` increasing). Exits 1 if any check fails. `template(task, shots)` builds the template for any shot count.
+- `python -m cv_tools.shots --input <clip> --output <dir>` ([cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools)): the shots of a clip as `shots.json` (start/end frame, `MM:SS.mmm`) plus one frame strip per shot. Run it first and write the prompt from the strips: one shot, no timestamps; several, the multi-shot variant.
 - A tool that writes prompts automatically (we use a ComfyUI node) should import `template()` and `audit()` from here instead of copying the template text, and fail on any audit miss.
