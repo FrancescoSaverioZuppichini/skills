@@ -119,6 +119,7 @@ The line's goal and number, what is already known (numbers, paths, links), the p
   - If it is already published, the line becomes "adopt and measure", and the page cites the paper.
   - If a paper contradicts it, re-test before anything builds on it.
   - Audit work done so far the same way: earlier conclusions in PLAN.md are re-checked when a newer paper touches them.
+- **Metric judges are advisory, never a kill gate.** A lever dies only for one of two reasons. Either the frames visibly get worse, judged by eye on a side by side, with the owner's eye final. Or it fails to give its speed or memory gain. Before any metric bar exists, measure the noise: a second seed of the same job, numerics-only arms, the same seed on another GPU. Report every delta as "within noise" or "worse than noise". Small deltas from one render per arm (e.g. identity −0.02, a sharpness score −6 %) are noise, not a verdict. A tight numeric bar that kills a working lever is a recurring failure, so don't set one.
 - Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.
