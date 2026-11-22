@@ -43,7 +43,7 @@ ffmpeg -nostdin -y -i "$OUT/window.mp4" -vf "select='between(n,$A,$B)*not(mod(n,
 AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$OUT/window.mp4"); echo "audio: ${AUDIO:-none}"
 [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$OUT/window.mp4" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
 
-# 5. Write the prompt to $OUT/prompts/<name>.txt (template below), then audit (exit 1 = fix and rerun)
+# 5. Write the prompt to $OUT/prompts/<name>.txt (template below), then check it with the skill's script (exit 1 = fix and rerun)
 python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts"
 ```
 
@@ -135,7 +135,7 @@ Quiet natural ambience of <the scene>, with no speech and no music.
 
 **Length** (the whole prompt; the fixed text alone is ~340 words): aim for 540–670; the audit fails above 750, plus 150 per later shot. Budget per shot: `{MOVES}` 90–140 words, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence each; trim `{MOVES}` first.
 
-## Checklist (the audit checks 1–9; you check 10–12 by eye)
+## Checklist (`scripts/h3_audit.py` checks 1–9 for you; check 10–12 yourself against the frames)
 1. No banned word (drawing, overlays, source wear).
 2. The `<Video 1>` definition says she's under a heavy blur that never appears.
 3. The `<Video 1>` retention line is partially_preserved, with the woman and the blur not kept.

@@ -11,7 +11,7 @@ description: How to write prompts for the image/video models (MiniMax H3 video s
 3. **Fix failures in the template, not in one clip's text.** A fix that only works for one clip is overfitting.
 4. **Never ask the model to keep something drawn on the input** (stickers, captions, overlays). Guide-conditioned models can't tell those from the guides. Paste graphics back afterwards.
 5. **Never name what you are removing.** Describe only the new thing.
-6. **Audit before any render.** The writer runs the task's audit script and checklist; the orchestrator runs them again, puts the prompt verbatim on the review page, and renders short before long.
+6. **Check your own prompt before it's used:** run the task's audit script on it (one command, in the task's workflow); exit 1 = fix and rerun. Then reread your moves against the frames.
 7. **Every claim carries its evidence:** the run ids, and whether it is strong, medium, weak or open. Don't present one run as a law.
 
 ## Tasks
