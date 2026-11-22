@@ -1,6 +1,6 @@
 ---
 name: prompt-writing
-description: How to write prompts for the image/video models (MiniMax H3 video so far), organised by task (character swap, …) with one subsection per model. Use EVERY time you write, rewrite, review or audit a prompt for a generation or edit run, or brief an LLM/agent to write one. Each task/model subsection has a template, a pre-render checklist, a symptom→fix fallback table with evidence strength, and failed→fixed examples from real runs.
+description: How to write prompts for the image/video models (MiniMax H3 video so far), organised by task (character swap, …) with one subsection per model. Use EVERY time you write, rewrite, review or audit a prompt for a generation or edit run, or brief an LLM/agent to write one. Each task file has a copy-paste workflow, a template, a pre-render checklist and a symptom→fix table; evidence and failed attempts live in `references/`.
 ---
 
 # Prompt writing

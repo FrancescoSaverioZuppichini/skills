@@ -12,7 +12,7 @@ Read `models/minimax-h3.md` first (the H3 format). Render setup, evidence and hi
 5. **Fixed text is copied word for word.** Only `{SLOTS}` change.
 
 ## Workflow
-Copy this block, set the four variables, run it step by step. Paths are absolute because cv-tools runs from its own folder.
+Copy this block, set the four variables, run it step by step. Paths are absolute because cv-tools runs from its own folder. If cv-tools and this skill sit on different machines, run steps 1–4 where cv-tools is, copy the images back to look at them, and run the audit where the skill is.
 
 ```bash
 SRC=/abs/path/source.mp4                 # the source clip
@@ -26,31 +26,31 @@ mkdir -p "$OUT/prompts"
 
 # 2. Cut the 3 s window: 73 frames at 24 fps, 736x1312 (START in seconds, inside one shot)
 START=0
-ffmpeg -y -ss $START -i "$SRC" -t 3.042 \
+ffmpeg -nostdin -y -ss $START -i "$SRC" -t 3.042 \
   -vf "fps=24,scale=736:1312:force_original_aspect_ratio=increase,crop=736:1312" -frames:v 73 \
   -af apad=whole_dur=3.042 -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/window.mp4"
 
 # 3. Shots and strips of the window: $OUT/window/shots.json + shot-N.png (every 6th frame = 0.25 s)
 (cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$OUT/window.mp4" --output "$OUT/window")
 
-# 3b. Close-up of a fast move: every 2nd frame from A to B (repeat for each fast range)
+# 3b. Close-up of a fast move: every 2nd frame from A to B, up to 26 frames per call (repeat per range)
 A=0; B=26
-ffmpeg -y -i "$OUT/window.mp4" -vf "select='between(n,$A,$B)*not(mod(n,2))',scale=480:-2,tile=7x2" \
+ffmpeg -nostdin -y -i "$OUT/window.mp4" -vf "select='between(n,$A,$B)*not(mod(n,2))',scale=480:-2,tile=7x2" \
   -frames:v 1 -vsync 0 "$OUT/dense-$A-$B.png"
 
-# 4. Sound: no output = silent source; otherwise read the spectrogram
+# 4. Sound: no output = silent source (skip the spectrogram); otherwise read the spectrogram
 ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$OUT/window.mp4"
-ffmpeg -y -i "$OUT/window.mp4" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
+ffmpeg -nostdin -y -i "$OUT/window.mp4" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
 
 # 5. Write the prompt to $OUT/prompts/<name>.txt (template below), then audit (exit 1 = fix and rerun)
 python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts"
 ```
 
 What to decide at each step:
-1. **Whole clip:** where she's in frame, and where the cuts are.
+1. **Whole clip:** where she's in frame, and where the cuts are. Don't take scene details from these strips: the window may be cropped.
 2. **Window:** the one you were given, otherwise the first 3 s where she's in frame, inside one shot. A source that isn't 9:16 is cropped to fill (sides or top/bottom are lost); from here on, write only from the window. **Never write the aspect ratio or resolution in the prompt:** it is set by the render's width and height (736×1312 here). MiniMax's README lists Ref2VA's ratio as "adaptive" (it follows the inputs), its prompt rewriter returns `ratio` as a separate field, and no official prompt names a ratio.
 3. **Shots:** **one shot = the template as is, no timestamps. Several = the multi-shot variant, `{TIME}` = each later shot's `start` in `shots.json`.** Two adjacent frames that jump to a different angle or place are a cut too, whatever the score; a pan slides the same place across and is not a cut. Strips read left to right, top row first; frame numbers are in `strip_frames`. Wherever her hands or head move between two strip frames, run 3b on that range.
-4. **Sound:** silent source = the no-sound variant with the silent-source soundscape (below). With audio: listen if you can; in the spectrogram stacked bands are a voice or singing, a regular beat is music. `{SOUND}` names the kinds of sound in order ("a short voice line, then loud music", "a voice singing over music"); speech and lyrics are never transcribed.
+4. **Sound:** silent source = the no-sound variant with the silent-source soundscape (below). With audio: listen if you can; in the spectrogram stacked bands are a voice or singing, a regular beat is music. Name only what you're sure of ("music with a steady beat" when you can't tell whether there is a voice). `{SOUND}` names the kinds of sound in order ("a short voice line, then loud music", "a voice singing over music"); speech and lyrics are never transcribed.
 5. **Prompt:** fill the slots from the strips and close-ups; after the audit passes, reread every move against the strips (checklist 10–12). Only prompt `.txt` files go in `$OUT/prompts`.
 
 ## Per-sheet values (the sheet in use, copied verbatim; a new sheet gets its own)
@@ -65,15 +65,16 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing (details go in `{SCENE}` and `{FRAMING}`) | "a white parking garage in flat light, close selfie framing" |
 | `{KEPT}` | what of the scene stays, ending "as `<Video 1>`" | "the same garage, light and camera path as <Video 1>" |
-| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Which camera: her outstretched arm toward the lens = selfie; the background never moves = standing still; a small drift = another person. If the picture is turned sideways, add "with the picture turned a quarter turn sideways". | |
+| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Which camera: her outstretched arm toward the lens = selfie (then end with "her other hand is empty" instead of "she holds nothing", since the phone is never named); the background never moves = standing still; a small drift = another person. If the picture is turned sideways, add "with the picture turned a quarter turn sideways". | |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things, in the order they appear; the swing itself goes in `{CAMERA}`). Leave out other people: they stay because the scene is kept | "a white garage with white walls and ceiling and white painted lines on the floor" |
-| `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view** (front of her top, bare waist, legs) | "She is framed close and from below, from her outstretched arm in the foreground up to her head; the view shows the front of her top, her bare waist and the front of her skirt." |
-| `{MOVES}` | 4–6 sentences per 3 s shot (at least 2 for a short shot), counting the facing sentence, in order, each with its verb ("covers her mouth and laughs", "spits onto the nozzle"). **Say which way her body faces and write a turn only if the frames show one.** A turn = her shoulders rotate more than about 45°, toward one side facing the camera; anything less is a sway ("her hips sway", never "her body angles"). If she never turns, say so. | "She keeps her front to the camera the whole time and never turns." |
-| `{CAMERA}` | one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, following or a swing, as the strip shows; a camera move only if the background moves | "The camera stays still, matching…" / "The selfie camera swings steadily toward the picture right, the park sliding out as the street comes in, matching…" |
+| `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view**, named as body parts (her top, waist, hips, legs); the outfit text decides what covers them | "She is framed close and from below, from her outstretched arm in the foreground up to her head; the view shows the front of her top, her bare waist and the front of her skirt." |
+| `{MOVES}` | 4–6 sentences per 3 s shot (at least 2 for a short shot), counting the facing sentence, at most two gestures per sentence, in order, each with its verb ("covers her mouth and laughs", "spits onto the nozzle"). **Say which way her body faces and write a turn only if the frames show one.** A turn = her shoulders rotate more than about 45°, toward one side facing the camera; anything less is a sway ("her hips sway", never "her body angles"). If she never turns, say so. If you can't tell a direction, leave the direction out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns." |
+| `{CAMERA}` | one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, following or a swing, as the strip shows; a camera move only if the background moves. The background sliding to the picture left means the camera swings to the picture right | "The camera stays still, matching…" / "The selfie camera swings steadily toward the picture right, the park sliding out as the street comes in, matching…" |
 | `{LIGHT}` | "the same <light> as the <scene>" | "the same flat white light as the garage" |
 | `{SOUND}` | the kind of sound, in order (step 3) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats:** 4–6 sentences still. Merge repeats of one action ("pushes her hair back twice"); never drop a change of direction or a gesture with its own verb (a wave, covering her mouth).
+- **Wind-blown hair:** say what the wind does ("the wind lifts her hair over her head"), never a shape it makes (bun, updo).
 - **Lips move on a silent source:** write it ("her lips move"); the soundscape stays the silent-source line.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which is which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces ("faces the lens"), never what covers the eyes. **Objects she holds** stay (they're outside her mask): name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one. A selfie is "filmed as a selfie at arm's length"; her outstretched arm may be described.
@@ -83,6 +84,7 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
   - overlays: `sticker, stickers, overlay, overlays, caption, captions, speech bubble, speech bubbles, on-screen, card, cards`
   - source wear: `corset, corsets, garter, garters, choker, chokers, stocking, stockings, pvc, latex, tattoo, tattoos, blouse, blouses, necklace, necklaces, pendant, pendants, bun, buns, ponytail, ponytails, updo, braid, braids, sneaker, sneakers, trainers, boot, boots, heels, sandals, shoes, socks, jeans, trousers, pants, sweatpants, joggers, leggings, shorts, hoodie, hoodies, sweater, sweaters, jumper, jumpers, cardigan, cardigans, jacket, jackets, coat, coats, t-shirt, t-shirts, tank top, tank tops, crop top, crop tops, sports bra, sports bras, bra, bras, bikini, bikinis, dress, dresses, earring, earrings, bracelet, bracelets, ring, rings, lanyard, lanyards, glove, gloves, glasses, sunglasses, hat, hats, scrunchie, scrunchies, hair tie, hair ties, belt, belts`
   - The sheet's own outfit text (`{OUTFIT}`) is exempt from the source-wear list.
+  - The list can't be complete: no word for anything the source woman wears (sleeve, zip, fabric, strap, logo) is allowed either; the audit only catches the listed ones.
 
 ### Template
 `{…}` is filled per clip. Everything else is fixed text, copied word for word.
@@ -117,7 +119,7 @@ N/A
 
 The no-sound lines in full, for a silent source:
 ```
-[video editing] The target video is an edited version of <Video 1>. <Subject 1> takes the place of the woman in <Video 1> and performs <Subject 2> in <Subject 3>. …
+[video editing] The target video is an edited version of <Video 1>. <Subject 1> takes the place of the woman in <Video 1> and performs <Subject 2> in <Subject 3>. Her clothes and jewellery in <Video 1> are replaced by the outfit of <Subject 1>. The blur on <Video 1> is not part of the target video.
 <Video 1> (shot length): partially_preserved - the shot length remains; the woman and the blur are not kept.
 …
 overall_soundscape:
@@ -131,7 +133,7 @@ Quiet natural ambience of <the scene>, with no speech and no music.
 - Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
 - `{SCENE_SHORT}`, `{KEPT}`, `{LIGHT}` and `{SOUND}` cover all shots ("the same flat garage light and soft room daylight as the two scenes").
 
-**Length** (the whole prompt; the fixed text alone is ~340 words): aim for 540–670; the audit fails above 750, plus 150 per later shot. Budget per shot: `{MOVES}` 90–150 words, `{FRAMING}` up to 45, `{SCENE}` up to 40; trim those first.
+**Length** (the whole prompt; the fixed text alone is ~340 words): aim for 540–670; the audit fails above 750, plus 150 per later shot. Budget per shot: `{MOVES}` 90–140 words, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence each; trim `{MOVES}` first.
 
 ## Checklist (the audit checks 1–9; you check 10–12 by eye)
 1. No banned word (drawing, overlays, source wear).
