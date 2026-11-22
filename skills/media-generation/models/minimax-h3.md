@@ -25,8 +25,9 @@
 | `<Picture N>` | an image used as a concrete frame (first, key or last). If it only supplies a subject, cite it inside that `<Subject>` line instead of giving it its own line |
 | `<Video N>` | the editing source, the continuation start, or a whole-video timing structure |
 | `<Audio N>` | an audio signal that is copied or referenced |
+| `[Shot N]` | marks a shot. In `detailed_description` each shot opens with it: `[Shot 1]` with no timestamp, every later shot `[Shot N] At MM:SS.mmm,` at its cut. In `retention_analysis` it says where a label appears: `(throughout [Shot 1], [Shot 2])` |
 
-A label keeps the same meaning in every section. Numbering is per type, in input order.
+A label keeps the same meaning in every section. Numbering is per type, in input order; shots are numbered in playback order.
 
 ## Task prefixes (combine with ` + `)
 `video editing` (an existing video is modified) · `video continuation` · `reference generation` (assets guide character, scene, style, motion or camera without being a frame or the edited source) · `keyframe completion` (an image is a concrete frame) · `audio reuse` (the same signal is reused) · `audio reference` (only timbre, style or content).
