@@ -23,10 +23,10 @@ OUT=/abs/path/work/clip1      # an empty work folder
 CV=/abs/path/cv-tools         # cv-tools checkout (has .venv)
 SKILL=/abs/path/media-generation
 NAME=clip1                    # a unique name for the files sent to ComfyUI
-mkdir -p "$OUT/slots"
+mkdir -p "$OUT/prompt"
 ```
 
-0. **New outfit only.** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write this sheet's three per-sheet values (below) for the new outfit and pass them with the run (`Template · sheet.*`, or `outfit.txt` / `outfit_lock.txt` in the slots folder for the audit).
+0. **New outfit only.** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write this sheet's three per-sheet values (below) for the new outfit and use them in the prompt.
 1. **The part to render.** Whole clip: `CLIP="$SRC"`. A part or one shot: cut it, keeping the sound; take the times from step 2's `shots.json` when it's a shot.
    ```bash
    CLIP="$OUT/clip.mp4"
@@ -39,7 +39,7 @@ mkdir -p "$OUT/slots"
    (cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$CLIP" --output "$OUT/shots")
    ```
    - One shot: the one-shot template, no timestamps anywhere.
-   - N shots: the multi-shot template. Each later shot k gets `{TIME_k}` = its `start` in `shots.json`, and its own `{SCENE_k}`, `{FRAMING_k}`, `{MOVES_k}`, `{CAMERA_k}` from its own strip. In the workflow they go in the Clip prompt's `later_shots` box (format below).
+   - N shots: the multi-shot template. Each later shot k gets `{TIME_k}` = its `start` in `shots.json`, and its own `{SCENE_k}`, `{FRAMING_k}`, `{MOVES_k}`, `{CAMERA_k}` from its own strip, written as one later-shot block (template below).
    - A cut the tool missed: two adjacent frames that jump to a new angle or place are a cut, whatever the score (the tool's line for it: `max_score_inside_shots`). A pan slides the same place across and is not a cut. Re-run with a lower `--cut`, or split the shot by hand at that frame.
 3. **Close-ups of fast moves.** Wherever hands or head move between two strip frames, tile that range (A even, B - A ≤ 26):
    ```bash
@@ -57,10 +57,10 @@ mkdir -p "$OUT/slots"
    cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
    ```
    Run it on the whole clip. If the tracker loses her at a cut (look at the guide: any frame where she is not blurred), cut the clip at the cuts, build one guide per shot, and join them in order (`ffmpeg -f concat`), sound included.
-6. **Write the slots**, one file per Clip prompt box in `$OUT/slots/` (`scene_short.txt`, `kept.txt`, `style.txt`, `scene.txt`, `framing.txt`, `moves.txt`, `camera.txt`, `light.txt`, `sound.txt`, and `later_shots.txt` only with several shots), from the strips and close-ups of the **raw** clip, never from the guide. Rules: "Writing the slots" below.
-7. **Audit** (exit 1 = fix and rerun). It builds the prompt exactly as the workflow will, saves it as `slots/prompt.full`, and checks it. Then reread every move against the strips (checks 10–12).
+6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the per-sheet values, and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
+7. **Audit** (exit 1 = fix and rerun), then reread every move against the strips (checks 10–12):
    ```bash
-   python3 "$SKILL/scripts/h3_audit.py" --slots "$OUT/slots" --seconds "$SECONDS"     # add --no-sound for the no-sound variant
+   python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$SECONDS"
    ```
 8. **Render** (Run, below). Then check (Check the result).
 
@@ -70,16 +70,12 @@ mkdir -p "$OUT/slots"
   {"shot": 1, "start_frame": 0,   "end_frame": 101, "start": "00:00.000", "end": "00:04.250", "cut_score": null,  "strip": "…/shot-1.png"},
   {"shot": 2, "start_frame": 102, "end_frame": 191, "start": "00:04.250", "end": "00:08.000", "cut_score": 0.526, "strip": "…/shot-2.png"}]}
 ```
-- Shot 1 (from `shot-1.png`) fills `scene.txt`, `framing.txt`, `moves.txt`, `camera.txt` → `{SCENE}`, `{FRAMING}`, `{MOVES}`, `{CAMERA}` after `[Shot 1]`, no timestamp.
-- Shot 2 (from `shot-2.png`) goes in `later_shots.txt`; its `start` becomes `{TIME_2}`:
+- Shot 1 (from `shot-1.png`) fills `{SCENE}`, `{FRAMING}`, `{MOVES}`, `{CAMERA}` after `[Shot 1]`, no timestamp.
+- Shot 2 (from `shot-2.png`) is its own block right after shot 1's `{CAMERA}`, its `start` as the time:
   ```
-  TIME: 00:04.250
-  SCENE: <place and its main objects in shot 2>
-  FRAMING: <how close, from where to where, which body parts are in view>
-  MOVES: <shot 2's moves, in order>
-  CAMERA: <one sentence ending "matching the framing and speed of <Video 1> throughout.">
+  [Shot 2] At 00:04.250, the shot cuts to <Subject 1> in <Subject 3>: <place and its main objects in shot 2>. <how close, from where to where, which body parts are in view> She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. <shot 2's moves, in order> <one sentence ending "matching the framing and speed of <Video 1> throughout.">
   ```
-- The audit and the node turn it into `[Shot 2] At 00:04.250, the shot cuts to <Subject 1> in <Subject 3>: …`, list `(throughout [Shot 1], [Shot 2])` in the retention lines, and close with "It cuts only where <Video 1> cuts."
+- The retention lines say `(throughout [Shot 1], [Shot 2])`, and the closing sentence becomes "It cuts only where <Video 1> cuts."
 
 ## Per-sheet values (the sheet in use, copied verbatim; a new sheet gets its own)
 - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
@@ -182,7 +178,7 @@ N/A
 - Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
 - `{SCENE_SHORT}`, `{KEPT}`, `{LIGHT}` and `{SOUND}` cover all shots ("the same <light 1> and <light 2> as the two scenes").
 
-**No sound** (only for a clip with no audio stream, or when told not to keep it): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman and the blur are not kept."; `overall_soundscape` becomes, for a silent clip: "Quiet natural ambience of <the scene in 2–5 words>, with no speech and no music." (open: not render-tested), or the new sound you were asked for. In the workflow: `Clip sound on / off` = false and the sound box holds that sentence.
+**No sound** (only for a clip with no audio stream, or when told not to keep it): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman and the blur are not kept."; `overall_soundscape` becomes, for a silent clip: "Quiet natural ambience of <the scene in 2–5 words>, with no speech and no music." (open: not render-tested), or the new sound you were asked for. In the workflow: `Clip sound on / off` = false.
 
 **Length** (the fixed text alone is ~340 words): a 3 s single shot lands at 540–670 words. Per shot: `{MOVES}` 30–45 words per second, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence; trim `{MOVES}` first. The audit fails above 750 words + 150 per later shot + 45 per second past 3 s (`--seconds`).
 
@@ -190,18 +186,14 @@ N/A
 Default size: ~1 MP (Output size: from image, 0.92 MP, multiple 32; a 9:16 clip renders 736×1312, the guide is fed at half that). Sheet, models and sampler are fixed in the workflow.
 
 ```bash
-ARGS=()
-for k in scene_short kept style scene framing moves camera light sound later_shots; do
-  [ -s "$OUT/slots/$k.txt" ] && ARGS+=(--set "Clip prompt.$k=$(cat "$OUT/slots/$k.txt")")
-done
 $RUN minimax-h3-reference-to-video \
   --set "Video 1 · guide.video=@$OUT/$NAME-guide.mp4" \
+  --set "Swap prompt.value=$(cat "$OUT/prompt/prompt.txt")" \
   --set "Seed.noise_seed=1001" \
   --set "Clip sound on / off.value=true" \
   --set "REFINE on / off.value=false" \
-  --set "DE-ROPE on / off.value=false" \
-  "${ARGS[@]}"
-# new sheet: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" --set "Template · sheet.outfit=<OUTFIT>" --set "Template · sheet.outfit_lock=<OUTFIT_LOCK>"
+  --set "DE-ROPE on / off.value=false"
+# new sheet: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" (its per-sheet values are already in the prompt)
 ```
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound.
 - Time (3090, models loaded): 3 s one pass 2.8 min; REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.

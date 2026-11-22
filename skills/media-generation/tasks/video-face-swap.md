@@ -21,7 +21,7 @@
 | `<Subject 1>` | face, identity, hair, body shape, outfit | only her face, identity and hair |
 | `<Subject 2>` | her performance only | the woman herself: body, clothes, jewellery and performance |
 | Outfit sentence | in every shot | never |
-| Workflow prompt boxes | the Clip prompt node builds it | not supported yet: the prompt goes in through the API graph (Run) |
+| Template | the character-swap template | the face-only template below |
 
 ## Rules for this task
 - **Hide only her face and hair.** The model keeps what it can see, so her clothes stay.
@@ -109,27 +109,14 @@ N/A
 **No sound** (the only allowed changes): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman's face and hair and the blur are not kept."; write a new `overall_soundscape`.
 
 ## Run
-The workflow's prompt nodes build only the character-swap template, so the face-only prompt replaces their output in the API graph. Same size, time and output as the character swap.
+The same workflow and toggles as the character swap; only the prompt in `Swap prompt` differs. Same size, time and output.
 
 ```bash
-SERVER=${COMFYUI_URL:-http://127.0.0.1:8188}
-curl -s -F image=@"$OUT/$NAME-guide.mp4" -F overwrite=true "$SERVER/upload/image"     # --dry never uploads
-$RUN minimax-h3-reference-to-video --set "Video 1 · guide.video=$NAME-guide.mp4" \
-  --set "Seed.noise_seed=1001" --set "REFINE on / off.value=false" --dry > "$OUT/graph.json"
-python3 - "$OUT/graph.json" "$OUT/prompts/face.txt" "$SERVER" <<'EOF'
-import json, sys, time, urllib.request
-g, text, server = json.load(open(sys.argv[1])), open(sys.argv[2]).read(), sys.argv[3]
-for k in [k for k, n in g.items() if n["class_type"] in ("LabH3Template", "LabH3ClipPrompt")]:
-    del g[k]
-for n in g.values():
-    if n["class_type"] == "MiniMaxH3ReferenceToVideo":
-        n["inputs"]["prompt"] = text
-call = lambda p, b=None: json.load(urllib.request.urlopen(urllib.request.Request(server + p, json.dumps(b).encode() if b else None, {"Content-Type": "application/json"})))
-pid = call("/prompt", {"prompt": g})["prompt_id"]
-while pid not in (h := call(f"/history/{pid}")):
-    time.sleep(5)
-print(h[pid]["status"]["status_str"], [f["filename"] for o in h[pid]["outputs"].values() for v in o.values() if isinstance(v, list) for f in v if isinstance(f, dict) and "filename" in f])
-EOF
+$RUN minimax-h3-reference-to-video \
+  --set "Video 1 · guide.video=@$OUT/$NAME-guide.mp4" \
+  --set "Swap prompt.value=$(cat "$OUT/prompts/face.txt")" \
+  --set "Seed.noise_seed=1001" \
+  --set "REFINE on / off.value=false"
 ```
 
 ## Check the result
