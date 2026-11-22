@@ -3,7 +3,7 @@
 **Goal:** the character becomes the whole person in a photo (face, hair, body build); the photo's pose, room, light and framing stay. Model: `models/qwen-image-edit.md`. Workflow: `qwen-character-swap` (Qwen Image 2.1 UC + the BFS body-swap LoRA).
 
 ## Ask if unsure
-- Which character sheet? Default: the body sheet the body sheet (it carries her body shape; a must) plus her head picture.
+- Which character sheet? Default: the body sheet (it carries her body shape; a must) plus her head picture.
 - Her clothes, or the photo's? Default: the sheet's.
 - Phone finish on? Default: yes for anything that goes out.
 
