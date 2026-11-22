@@ -1,53 +1,61 @@
 ---
 name: comfyui-workflow
-description: Use EVERY time you make, edit or run a ComfyUI workflow (the UI JSON in ComfyUI/user/default/workflows): adding or moving nodes and groups, wiring, layout, naming, sizes, optional stages, or running a saved workflow from code. Holds the naming convention, the layout rules, the open-tab rule, the layout checker (scripts/check_layout.py) and the runner (scripts/run_workflow.py).
+description: Use EVERY time you make, edit or run a ComfyUI workflow (the UI JSON in ComfyUI/user/default/workflows): adding or moving nodes and groups, wiring, layout, naming, sizes, optional stages, or running a saved workflow from code. Holds the naming convention, the layout rules, the open-tab rule, the layout checker and the runner.
 ---
 
 # ComfyUI workflows: make, edit, run
 
+`<skill>` below is this skill's folder; the scripts are `<skill>/scripts/check_layout.py` and `<skill>/scripts/run_workflow.py`.
+
 ## Rules
-1. **One workflow per task, named `<model>-<task>`:** lowercase, hyphens, full words, no abbreviations (`minimax-h3-reference-to-video`, `qwen-character-swap`, `krea2-text-to-image`). No `-test`, `-researching`, `-v2` or temp copies. Change the task's one workflow in place.
-2. **Delete what isn't used.** No archive folders, no `.bak` files: git is the backup.
-3. **Close the tab first.** An open ComfyUI tab autosaves its own copy over the file. Ask the user to close it with "Don't save" before you write, and to reopen it after. Never write a file that's open in a tab.
-4. **Copy node JSON, never invent it.** Take a node's shape (inputs with `widget`, outputs, `properties`, `widgets_values` order) from a working workflow, or read it from `curl <server>/object_info/<NodeClass>`.
-5. **No hand-typed sizes.** One size node feeds every width/height: from the source image or clip when the workflow copies one, otherwise a ratio + megapixels. (Our pack's `Size` node does both; ComfyUI core's `ResolutionSelector` does ratio + megapixels only.)
-6. **Optional stages switch off cleanly.** One toggle per optional group. Off must leave exactly the main graph: use a switch (core If/Else) or nodes whose input passes through when bypassed. A text encoder or a detector has no pass-through, so it needs a switch.
-7. **A READ ME note in every workflow:** what it does, its inputs, its modes and measured times. Long explanations go there, never into node titles.
+1. **One workflow per task, named `<model>-<task>`,** lowercase with hyphens.
+   - `<model>`: the model as it's published, version included (`minimax-h3`, `qwen`, `krea2`, `seedvr2`, `qwen3`).
+   - `<task>`: full words, no abbreviations: `reference-to-video`, `text-to-image`, `character-swap`, `outfit-swap`, `remove-anything`, `upscale`, `text-to-speech`, `censor`.
+   - The same task on a different model is a different workflow. No `-test`, `-v2`, `-researching` or temp copies: change the task's one workflow in place.
+2. **Delete what isn't used.** No archive folders, no `.bak` files: keep the workflows folder in git, and git is the backup.
+3. **Close the tab before writing an existing file.** An open ComfyUI tab autosaves its own copy over the file, and you can't see from outside whether it's open. So ask the user to close it with "Don't save", wait for their yes, write, then tell them to reopen it. If they can't answer, don't write. Creating a new file, reading, `--list`, `--check` and runs are safe.
+4. **Copy node JSON, never invent it.** Take a node's shape (inputs with `widget`, outputs, `properties`, `widgets_values` order) from a working workflow, or from `curl <server>/object_info/<NodeClass>`.
+5. **No hand-typed sizes.** One size node feeds every width/height: from the source image or clip when the workflow copies one, otherwise a ratio + megapixels (ComfyUI core: `ResolutionSelector`; a custom size node can also read a source's shape).
+6. **Optional stages switch off cleanly.** One toggle per optional group. Off must leave exactly the main graph: use a switch (core `If/Else`), or nodes that pass their input through when bypassed (same type in and out). A text encoder or a detector can't pass through, so it needs a switch.
+7. **A READ ME note in every workflow:** what it does, the inputs the user sets, the modes, measured times. Long explanations go there, never into node titles.
 
 ## Layout
-- **Two rows of groups,** left to right in the order the data flows:
+- **Two rows of groups,** left to right in the order the data flows (y = the group's top edge):
   - Row 1, the main path (y 0): READ ME → MODELS → INPUTS → PROMPT → the main stages → OUTPUT (saves and comparers side by side, growing right).
-  - Row 2, the optional stages (y ≈ 1520).
+  - Row 2, the optional stages (y ≈ 1520, below row 1's tallest group plus a gap).
 - **A stage's preview or comparer sits inside that stage's group.**
 - **Colours:** blue `#3f789e` for the main path and the READ ME; yellow `#b58b2a` for optional stages and control arms.
 - **Every node inside a group; groups never overlap.**
-- **Titles ≤ 25 characters.** ComfyUI widens a node to fit its title.
-- **`pos` is the top of the node body;** the ~32 px title bar is drawn above it.
-  - Stack with `next y = y + rendered height + 100` (60 px clear plus the next title bar).
-  - Leave ≥ 120 px between nodes side by side; columns ≥ 150 px apart (440-wide nodes on a 560–600 px grid).
-- **Typical heights:** loader ~90, CLIP loader ~120, LoRA loader ~230, sampler ~270, multiline prompt ~300, image loader with preview 560–700, save or preview 480×700.
+- **Titles ≤ 25 characters.** ComfyUI widens a node to fit its title. Distinct titles: the runner finds inputs by title.
+- **`pos` is the top of the node body;** the 32 px title bar is drawn above it.
+  - Stacked: the checker wants ≥ 60 px between one body's bottom and the next title bar, so place the next node at `y + height + 100`.
+  - Side by side: ≥ 120 px between nodes; 440-wide nodes on a 560–600 px grid.
+- **Typical heights,** as a starting point (the checker uses each node's stored `size`): loader ~90, CLIP loader ~120, LoRA loader ~230, sampler ~270, multiline prompt ~300, image loader with preview 560–700, save or preview 480×700.
 
-**After every write,** run the checker until it prints `OK`. It checks overlaps (title bar included), nodes outside groups, group overlaps, long titles and dangling links.
+**After every write,** run the checker until it prints `OK`. It exits 1 on any problem. It checks overlaps (title bar included), nodes outside groups, group overlaps, long titles and dangling links. It does **not** check colours or the READ ME: look at those yourself.
 
 ```bash
-python3 scripts/check_layout.py "<ComfyUI>/user/default/workflows/<name>.json"
+python3 <skill>/scripts/check_layout.py <ComfyUI>/user/default/workflows/<name>.json
 ```
-
-Say plainly what changed, and that the user should reopen the tab.
 
 ## Run a workflow from code
-ComfyUI runs graphs in **API format** (a flat map of nodes and inputs), not the UI file. `scripts/run_workflow.py` converts the saved UI workflow on the fly with the server's `/object_info`, so code runs exactly what's in the menu.
+ComfyUI runs graphs in **API format** (a flat map of nodes and inputs), not the saved UI file. The runner converts the saved workflow on the fly, so code runs exactly what's in the Workflows menu.
 
-```bash
-python3 scripts/run_workflow.py <workflow name | path.json | all> [options]
-  --set "<node title>.<input>=<value>"   # repeat; JSON values when they parse (7, true, "x"); "@/local/file" uploads a file
-  --group "<group title>=on|off|mute"    # switch a group
-  --list                                 # every settable input with its current value, plus each group's state
-  --check --comfyui <ComfyUI folder>     # convert and run ComfyUI's own validator on the CPU: no server, no GPU
-  --dry                                  # print the API prompt instead of running it
-  --server http://127.0.0.1:8188         # default
-```
+1. **Server up?** `curl -s <server>/system_stats`. The server defaults to `http://127.0.0.1:8188` (or `$COMFYUI_URL`, or `--server`).
+2. **See the inputs:** `python3 <skill>/scripts/run_workflow.py <name> --list`. It prints every node title, its settable inputs with their current values, and each group's state. Nodes inside a subgraph show as `Subgraph / Node`.
+3. **Run it** with your changes, using the titles and inputs `--list` showed:
+   ```bash
+   python3 <skill>/scripts/run_workflow.py <name> \
+     --set "Seed.seed=1234" \
+     --set "Load Image.image=@/path/to/my.png" \
+     --group "Upscale=off"
+   ```
+   It prints each output file, the wall time and any random seed it drew. It exits non-zero on a validation error.
 
-- It posts `/prompt`, waits on `/history/<prompt_id>`, and prints every output file and the wall time.
-- Find inputs by node **title** (what the UI shows). Give nodes distinct titles.
-- Under the hood: `POST /prompt {"prompt": <api graph>}` returns a `prompt_id`; `GET /history/<id>` holds the outputs when it's done; the `/ws` websocket streams progress. In the UI, **Workflow → Export (API)** gives the same API graph by hand.
+**Options:**
+- `--set "<title>.<input>=<value>"`: repeat as needed. Values are JSON when they parse (`7`, `true`, `"x"`). `@<local file>` uploads the file to the server's input folder and sets its name (loader inputs only; skipped by `--dry` and `--list`).
+- `--group "<title>=on|off|mute"`: `off` bypasses the group's nodes (inputs pass through), `mute` stops them.
+- `--dry`: prints the API prompt instead of running it.
+- `--check`: converts and validates with ComfyUI's own validator on the CPU, with no server and no GPU. Run it with that install's Python: `<ComfyUI>/.venv/bin/python <skill>/scripts/run_workflow.py all --check --comfyui <ComfyUI>`. It reads the workflows from `<ComfyUI>/user/default/workflows` (default `--comfyui`: `$COMFYUI_DIR`, then `~/ComfyUI`). `all`, or several names, works only with `--check`.
+
+A normal run reads the workflow from the server's Workflows menu, or from a `.json` path, and needs the server either way.
