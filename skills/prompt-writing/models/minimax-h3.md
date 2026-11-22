@@ -43,5 +43,5 @@ A label keeps the same meaning in every section.
 
 ## Description rules
 - "As detailed and explicit as possible." For generation tasks, 350–500 words. For editing, the length scales with the source clip.
-- Timestamps where the action changes: `At 00:02.000 …`. Dialogue goes inside `<d>[Language] …</d>`, with the speaker id `(S1)`.
+- Shots: `[Shot 1]` opens the description with no timestamp; each later shot starts `[Shot N] At MM:SS.mmm,` at its cut, times increasing (official §5.1). A single shot has no timestamp. Dialogue goes inside `<d>[Language] …</d>`, with the speaker id `(S1)`.
 - Write in English, except dialogue, lyrics and visible on-screen text.

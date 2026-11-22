@@ -5,7 +5,7 @@
 ## Rules for this task, any model
 - **Hide the whole source woman** (blur, grey, or regenerate her area). Every run where her clothes stayed visible kept them (11b, 12, 18b); with the raw clip H3 kept her face and only recoloured her hair (base0).
 - **Never name what is drawn or hidden on the input.** Describe only the new person and the scene. Every prompt that described the drawn pose guides, even to say "never show them", got them painted onto her face (iterations 0–2, 3 wordings); the same prompt without them was clean 10 of 10 (iteration 3).
-- **The motion comes from the video, not the words.** Describe the moves in plain prose, in order, without timestamps.
+- **The motion comes from the video, not the words.** Describe the moves in plain prose, in order, without timestamps. A source with cuts gets one `[Shot N]` per shot and a cut time on each later shot, never inside a shot (multi-shot variant below).
 - **The look comes only from her reference.** Name her hair, eyes and build. Never name the source person's clothes, hair or jewellery.
 - **Never mention on-screen graphics** (stickers, captions, pop-ups). Asking to keep them got the guides painted too (25 → 26).
 
@@ -15,7 +15,7 @@
 ---
 
 ## MiniMax H3 video (Singularity + Pika)
-Read `models/minimax-h3.md` (the common H3 format) first. Everything below is specific to this task and overrides it where they differ (this task leaves out timestamps and dialogue tags).
+Read `models/minimax-h3.md` (the common H3 format) first. Everything below is specific to this task and overrides it where they differ (this task leaves out dialogue tags, and timestamps everywhere except the cut times of a multi-shot source).
 
 One route: her blurred + the pose drawn on top, full redraw, the prompt never naming the drawing.
 
@@ -36,6 +36,7 @@ One route: her blurred + the pose drawn on top, full redraw, the prompt never na
 
 ### Workflow
 1. **Cut the window** at 24 fps and 736×1312, with its audio. Run `motion_guide` on exactly that window.
+   **Find its shots:** ffmpeg's scene score (`-vf "select='gte(scene,0)',metadata=print:file=-"`) of 0.3 or more on a frame starts a new shot there; a shot shorter than 12 frames (0.5 s) joins the one before. One shot: the template as is. Several: the multi-shot variant.
 2. **Frame strip for the writer**, by index, never fast `-ss` seek (two encodes seek to different moments):
    `ffmpeg -i clip.mp4 -vf "fps=24,trim=start=<S>:duration=<D>,setpts=PTS-STARTPTS,select=not(mod(n\,6)),scale=480:-2,tile=7x2" -frames:v 1 -vsync 0 strip.jpg`
    Frame k is at k × 0.25 s, read left to right, top row first; `<D>` = the window plus one frame (3.042 for 3 s). 480 px is the smallest size where hands and gaze read.
@@ -77,7 +78,46 @@ N/A
 
 **No-sound variant** (the only allowed changes): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman and the blur are not kept."; write a new `overall_soundscape`.
 
+**Multi-shot variant** (the source has cuts; the only allowed changes, applied by `scripts/h3_audit.py`'s `template()`):
+- every `(throughout [Shot 1])` lists all the shots: `(throughout [Shot 1], [Shot 2])`;
+- each later shot is one block right after shot 1's `{CAMERA}`, in order, with its own `{SCENE}`, `{FRAMING}`, `{MOVES}` and `{CAMERA}`:
+- Later shot: `[Shot {N}] At {TIME}, the shot cuts to <Subject 1> in <Subject 3>: {SCENE}. {FRAMING} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES} {CAMERA}`
+- Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
+- `{TIME}` is the cut: the first frame of the shot ÷ fps, as `MM:SS.mmm` (frame 36 at 24 fps = `00:01.500`). `{MOVES}` of each shot covers only that shot, in prose, with no timestamp. `{SCENE_SHORT}` and `{KEPT}` name the places of every shot.
+
 **Evidence:** iteration 3 (this template) and 5 (+ `--mask-grow 0.05`): 10 of 10 clean each, pose followed, on bridge, video 2, reel 01, reel 02, reel 03 at seeds 1001 / 2002 (the seeds that painted before), full-resolution audit. Prompt length 540–670 words.
+
+### Shots and timestamps: the official format, the community, and ours
+**Official (MiniMax full-reference guide §5.1, verbatim):** "`[Shot 1]` marks the opening shot and has no timestamp. Later shots use `[Shot N] At MM:SS.mmm, ...` to mark cut times."
+
+Official examples, short verbatim quotes (MiniMax's full-reference guide, linked in `references/README.md`: §5.2 and its worked example; the third is from MiniMax's H3-Context-IR API docs):
+```
+The target video is in a cinematic, literary music-video style with soft lighting and a slightly desaturated color palette.
+[Shot 1] The scene opens in a crowded urban street...
+[Shot 2] At 00:09.000, the shot cuts to an extreme close-up...
+```
+```
+<Subject 1> (appears in [Shot 1], [Shot 2], [Shot 3]): fully_preserved - the exposed brick wall, orange tufted sofa, patterned pillows, neon sign, and wooden coffee table are retained.
+[Shot 1] A medium shot establishes <Subject 1>, the coffee shop with its exposed brick wall, orange tufted sofa, patterned pillows, neon sign, and wooden coffee table. …
+[Shot 2] At 00:03.000, the shot cuts to a close-up of <Subject 4> (S2), the young man in the dark-grey hoodie from Shot 1, sitting beside <Subject 3> on the sofa and holding <Subject 2> securely in his arms. …
+[Shot 3] At 00:05.000, the shot cuts to a close-up of <Subject 3> (S1), the blonde woman in the light-pink shirt from Shot 1. …
+```
+```
+[Shot 2] At 00:02.800, the camera cuts to a medium close-up of the captain from Shot 1 in profile facing right
+```
+
+**Community (2026-11-22):** nobody puts a timestamp on a single shot; multi-shot use varies.
+- [HF discussion 47](https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/47): three single-shot prompts, each opening `[Shot 1] Live-action, …`, no timestamp; later shots as `[Shot 2] At 00:03, the camera cuts to…`.
+- [HF discussion 71](https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/71) (ref2va): retention lines `(appears in [Shot 1], [Shot 2], [Shot 3])`, shot blocks without timestamps.
+- [ComfyUI Fantastic H3 Prompt Builder](https://github.com/Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder): its shot button inserts `[Shot N] At MM:SS.mmm, the shot cuts to `; it warns when `[Shot 1]` carries a timestamp, when cut times don't increase, or when they pass the clip length.
+- [awesome-minimax-h3-prompts](https://github.com/ecomimagelab/awesome-minimax-h3-prompts): one-line single shots, no timestamps; multi-shot prompts split by `CUT TO:` with no times; one single take timed as `TIMELINE 0.0–3.0s`.
+- [Civitai article 34646](https://civarchive.com/articles/34646/minimax-h3-prompt-guide-structure-5-copy-ready-t2v-i2v-ref2v-prompts): its video-edit prompt has no timestamps ("Use Video 1 for all subject motion, timing and camera behavior."); its generation prompts use `[0–3 seconds]` ranges.
+- [ComfyUI's H3 prompt guide](https://docs.comfy.org/tutorials/video/minimax/minimax-h3-prompt-guide): one timestamp per cut (`At 00:05.000`), never a range; cut times increase and stay inside the clip length.
+
+**Ours:** one shot = no timestamp (the edit source carries the timing); several shots = the official `[Shot N] At MM:SS.mmm,` at each detected cut, moves still in prose. We write both with a ComfyUI node: ffmpeg scene score for the cuts, a vision LLM for the slots, `scripts/h3_audit.py`'s `template()` to fill and `audit()` to check. Example: its prompt for the 2-shot test clip (jeans 0–1.5 s + video 2 0–1.5 s), detailed_description:
+```
+Realistic phone footage in a lit parking garage, filmed as a selfie at arm's length, then in a bright room from a phone standing still; she holds nothing. [Shot 1] <Subject 1> performs the motion and expressions of <Subject 2> as shown in <Video 1>, frame by frame, in <Subject 3>: a gray parking garage with concrete flooring, white parking markings, exposed overhead pipes and a gray utility panel. She is framed from her head to her hips with one arm extending toward the lens, with the whole picture turned sideways so the floor runs along the right side of the frame. She wears the outfit of <Subject 1> in every frame: the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips. She extends one arm toward the camera and initially looks away with her face in profile. She turns her head toward the lens as her upper body becomes more front-facing. She keeps looking into the lens, moving her mouth and changing from parted lips to a slight smile. The arm's-length selfie camera swings and tilts briefly before settling into a closer frontal view, matching the framing and speed of <Video 1> throughout. [Shot 2] At 00:01.500, the shot cuts to <Subject 1> in <Subject 3>: a white room with a patterned rug, pale wooden flooring, a frosted-glass sliding door on a black rail, open shelving and an open doorway. She is framed from head to feet near the center, with the rug below her and ample space above her head. She wears the outfit of <Subject 1> in every frame: the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips. Facing the camera, she lifts both arms outward and smiles with her mouth open. She makes small bouncing steps and shifts her weight with her arms spread. She then angles her torso and turns her head toward the right side of the frame, smiling as one arm stays extended and her other arm draws slightly back. The camera stays still in a wide full-body view, matching the framing and speed of <Video 1> throughout. Her face is sharp, natural and fully visible in every frame, lit by the same overhead garage light and soft indoor daylight as the respective scenes, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+```
 
 ### Writing the slots (any clip)
 These hold for any clip. A rule that only fits one clip does not go here.
@@ -85,8 +125,8 @@ These hold for any clip. A rule that only fits one clip does not go here.
 - **`{KEPT}`**: what of the scene stays, ending "as `<Video 1>`". "the same location, lights, camera path and night light as <Video 1>".
 - **`{STYLE}`**: one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <the object> in one hand."
 - **`{SCENE}`**: the place and its 3–5 main objects, one phrase, no people.
-- **`{FRAMING}`**: one sentence, "She is framed <from where to where>…".
-- **`{MOVES}`**: **4–6 sentences of plain prose, in order, no timestamps.** Say what she does with its verb ("she spits onto the tip of the nozzle", "covers her mouth and laughs"), not only where her hands are; the reel 03 spit and the video 2 hand-to-mouth both came out (iteration 3). The video carries the timing: every passing prompt (16, 18f, iterations 3 and 5) used prose; 0.125 s timestamped beats were never validated.
+- **`{FRAMING}`**: one sentence, "She is framed <from where to where>…". If the whole picture is turned sideways (the floor runs along a side of the frame, as in a phone clip filmed rotated), say so: "with the whole picture turned sideways so the floor runs along the right side of the frame" (jeans W2).
+- **`{MOVES}`**: **4–6 sentences of plain prose, in order, no timestamps.** Say what she does with its verb ("she spits onto the tip of the nozzle", "covers her mouth and laughs"), not only where her hands are; the reel 03 spit and the video 2 hand-to-mouth both came out (iteration 3). Say which way her body faces (front to the camera, side, back) and write a turn only if the raw frames show one: a false turn line turned her in the render on 3 of 5 seeds, the truthful "keeps her front to the camera the whole time and never turns" on 0 of 5 (jeans, fallback table). The video carries the timing: every passing prompt (16, 18f, iterations 3 and 5) used prose; 0.125 s timestamped beats were never validated.
 - **`{CAMERA}`**: one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, or following, as the strip shows.
 - **`{LIGHT}`**: "the same <light> as the <scene>".
 - **`{SOUND}`**: what is heard (her singing, her voice, the ambience). Speech is never transcribed: no `<d>` dialogue tags.
@@ -108,7 +148,7 @@ These hold for any clip. A rule that only fits one clip does not go here.
 | 8 | No source garment, hair or jewellery is named | rule; checked by word list + eye |
 | 9 | Pictures cited inside `<Subject 1>` only, no standalone `<Picture N>` lines | 18e → 18f |
 | 10 | The source woman is never fully_preserved; her performance is attribute_transfer | 17 |
-| 11 | Moves in prose, no timestamps | 16, 18f, iterations 3 + 5 |
+| 11 | Moves in prose, no timestamps. One shot: no timestamp anywhere. Several shots: `[Shot 1]` bare, each later `[Shot N] At MM:SS.mmm,` at its detected cut, times increasing | 16, 18f, iterations 3 + 5; official guide §5.1 |
 | 12 | Scene and moves match the strip: nothing invented, right order | official guide |
 | 13 | Fixed text copied word for word | iteration 3 |
 | 14 | The outfit sentence ("She wears the outfit of `<Subject 1>` in every frame: …") sits in the shot, after the framing | jeans A → B (2026-11-19) |
@@ -127,6 +167,7 @@ Evidence: **strong** = failed and fixed on several runs or clips. **Medium** = o
 | **Nude** from the first frame, outfit lost | a small dark garment, bare arms and waist blur into one skin-coloured shape; the outfit was named only in `<Subject 1>`, never in the shot | the outfit sentence in the shot (template, checklist 14) | **strong**: jeans reel A → B, nude 2/2 → dressed on every later render (2 seeds, 7 prompts); no change on bridge or reel 01 (2026-11-19) |
 | Body turns front → side → back where the source keeps her front | **a false move line**: the prompt said "turns half away, and the camera swings down to her bare back", while the raw clip faces the camera throughout (the move had been written from the blurred guide) | write the moves from the **raw clip's frames**: W2 ("keeps her front to the camera the whole time and never turns") | **strong**: 3 s jeans, 5 seeds, a per-frame front/back check (SigLIP zero-shot on the person crop): old prompt baseline back on 3/5, the 0.5 MP-draft pipeline back on 4/5 → W2 0/5 for both; one wide-framing miss per arm remains. An earlier "W2 did not fix it" note was a longer clip judged by eye (2026-11-22) |
 | Soft face | a false move line also softens the face (old prompt vs W2, same seeds: baseline sharpness +3 % to +83 % on 5 of 5 seeds); small faces are few tokens | first check the moves against the raw clip. Avoid crops, face passes and paste-backs: work on the full frame. Resolution route: 0.5 MP draft → H3 learned latent upscaler ×2 → 2 Pika steps at 2.1 MP from noise 0.45 | **medium**: jeans 5 seeds (prompt effect); the 2.1 MP route's gain on a truthful prompt is median +6 % on jeans, under test on far faces (2026-11-22) |
+| The render ignores a cut or puts it elsewhere; identity changes across the cut | a multi-shot source with a prose-only prompt | the multi-shot variant: `[Shot N] At MM:SS.mmm,` at each detected cut | **open**: 2-shot test pending (2026-11-22) |
 | Stickers and captions gone | the full redraw drops them | **open**, accepted for now | every render |
 | Short hair (bob) after the wider blur | the rounder blurred head reads as short hair | **open** | reel 02, iteration 5 |
 | Pose drifts on long clips | — | **open**; try another seed | 8.4 s reel 01: 2 of 4 seeds |

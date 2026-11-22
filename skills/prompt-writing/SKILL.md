@@ -28,4 +28,5 @@ Add a task as `tasks/<task>.md`, laid out as: goal → rules for the task on any
 | MiniMax H3 | `models/minimax-h3.md`, plus the official guide (linked in `references/README.md`) and `references/h3-singularity-spec.md` (community, Apache-2.0) |
 
 ## Scripts
-- `scripts/h3_audit.py <dir>`: checks the checklist and that the fixed template text is copied word for word, on every `.txt` prompt in `<dir>`. A prompt whose `<Subject 1>` says "only her face, identity and hair" is checked against the face-swap template, any other against the character-swap one. Exits 1 if any check fails.
+- `scripts/h3_audit.py <dir>`: checks the checklist and that the fixed template text is copied word for word, on every `.txt` prompt in `<dir>`. A prompt whose `<Subject 1>` says "only her face, identity and hair" is checked against the face-swap template, any other against the character-swap one. One shot must carry no timestamp; several shots must follow the task's multi-shot variant (`[Shot 1]` bare, `[Shot N] At MM:SS.mmm,` increasing). Exits 1 if any check fails. `template(task, shots)` builds the template for any shot count.
+- A tool that writes prompts automatically (we use a ComfyUI node) should import `template()` and `audit()` from here instead of copying the template text, and fail on any audit miss.
