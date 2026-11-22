@@ -40,6 +40,59 @@ The program ends only when the goal's number is reached or the owner stops it. N
   - List each find with its arXiv id, date, link and a verdict: reuse, already failed, contradicts, or gap. Put the list in the brief.
   - You may split a wide sweep across several students, one topic cluster each. You still read the abstracts of the papers that decide a line yourself.
   - If novelty stays unclear, mark it so: the student's first milestone is to search further and validate.
+### How to search the literature (every round, before any thesis)
+
+A web search engine ranks by popularity, so it misses this month's papers. Query arXiv's own API, sorted by submission date, newest first.
+
+1. **Write 15–25 queries from the thesis.** Use its terms and their synonyms in three groups:
+   - the symptom ("small objects", "fine detail", "motion blur");
+   - the mechanism ("high-frequency", "token budget", "RoPE", "latent upsampling");
+   - the setting ("video diffusion", "few-step", "reference-to-video", "video editing").
+
+   Combine one term from each group per query.
+2. **Run them through the API, newest first, with a date window.** Current year first, then the year before.
+
+   ```sh
+   curl -s -G "https://export.arxiv.org/api/query" \
+     --data-urlencode 'search_query=abs:"video diffusion" AND abs:"high-frequency" AND submittedDate:[202601010000 TO 202612312359]' \
+     --data-urlencode sortBy=submittedDate --data-urlencode sortOrder=descending --data-urlencode max_results=40
+   ```
+
+   - **Field prefixes:** `ti:` (title), `abs:` (abstract), `au:` (author), `cat:` (category, e.g. `cat:cs.CV`, `cat:cs.LG`), `all:` (everything).
+   - **Phrases** go in double quotes.
+   - **Booleans** are `AND`, `OR`, `ANDNOT`; group with parentheses.
+   - **Dates** go in `submittedDate:[YYYYMMDDHHMM TO YYYYMMDDHHMM]`.
+   - **Paging:** `start=40` gives the next page.
+   - **Rate limit:** one request every 3 seconds.
+   - **Use `curl -G --data-urlencode`.** Python's urllib can fail on HTTPS certificates on macOS.
+3. **Parse and save.** Each Atom `<entry>` has `<id>` (the arXiv id), `<published>`, `<title>` and `<summary>` (the abstract).
+   - Deduplicate across queries.
+   - Save the round's hits to `literature/round-N.json` in the program folder, with the query that found each one, so the next round only reads what is new.
+
+   ```python
+   import subprocess, xml.etree.ElementTree as ET
+   ns = {"a": "http://www.w3.org/2005/Atom"}
+   xml = subprocess.run(["curl", "-s", "-G", "https://export.arxiv.org/api/query", "--data-urlencode", f"search_query={q}",
+                         "--data-urlencode", "sortBy=submittedDate", "--data-urlencode", "sortOrder=descending",
+                         "--data-urlencode", "max_results=40"], capture_output=True).stdout
+   for e in ET.fromstring(xml).findall("a:entry", ns):
+       arxiv_id = e.find("a:id", ns).text.rsplit("/", 1)[-1]
+       date, title = e.find("a:published", ns).text[:10], " ".join(e.find("a:title", ns).text.split())
+       abstract = " ".join(e.find("a:summary", ns).text.split())
+   ```
+4. **Triage in three passes.**
+   - Read the titles and keep the candidates.
+   - Read their abstracts (the `<summary>` field).
+   - For the papers that decide a line, open the full HTML at `https://arxiv.org/html/<id>` to get the method, the numbers, the limitations, and whether it is training-free.
+   - To fetch known papers by id: `curl -s -G "https://export.arxiv.org/api/query" --data-urlencode "id_list=2511.19778,2610.05816"`.
+5. **Follow the citations forward.** Newer work that builds on a deciding paper often beats it:
+
+   ```sh
+   curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:2511.19778/citations?fields=title,year,externalIds&limit=100"
+   ```
+6. **Check code and weights.** Look for the GitHub link in the abstract or HTML, the project page, and Hugging Face. Then run WebSearch in extended mode for what arXiv doesn't hold: repos, model cards, issue trackers, community nodes, user reports.
+7. **Write the verdicts.** In the brief and PLAN.md, record one row per paper: arXiv id, date, link, one-line method, the number that matters, code yes or no, and a verdict (reuse / already failed / contradicts / gap).
+
 - **Different.** No two lines take the same path or touch the same code. Before spawning, compare the new line with the running ones; merge or drop overlaps.
 - **Reuse first.** When something published already solves part of a line, the line becomes "adopt and measure".
 - **Few, in phases.** Usually 3 to 5 lines at once. Build and measure phases come first and skip the novelty search; improvement and novelty phases need it. Start a phase only when the previous one has its answer; park later ideas in PLAN.md.
