@@ -4,7 +4,8 @@ Agent skills from my day-to-day work: video generation in ComfyUI, research with
 
 | Skill | What it does |
 |---|---|
-| [`comfyui-workflow`](skills/comfyui-workflow) | Edit ComfyUI UI workflows by script without wrecking the layout: two-row groups, short titles, real node sizes, no overlaps. `check_layout.py` must print `OK` before the agent hands anything over. |
+| [`comfyui-workflow`](skills/comfyui-workflow) | Make, edit and run ComfyUI workflows: one workflow per task with plain names, a layout checker that must print `OK`, and `run_workflow.py` to run any saved workflow from code (`--list`, `--check`, `--set`, `--group`). |
+| [`media-generation`](skills/media-generation) | Get an image, video or voice task done end to end: which workflow, which inputs, what to write, the run command, how to check the result. One recipe per task (video and photo character swap, outfit swap, remove anything, text to image, clone a reference image's vibe, character sheet, upscale, censor, text to speech) and one prompt guide per model (MiniMax H3, Qwen image edit, Krea 2, Qwen3-TTS). |
 | [`civitai`](skills/civitai) | Search, compare, inspect and download Civitai models, LoRAs and workflows with the official CLI. It never generates (that spends Buzz) unless asked. |
 | [`research-lab`](skills/research-lab) | Run a research program as the professor: pick lines that don't overlap, give each to a research-student agent, schedule the one shared GPU, check every result yourself. Needs [`agents/research-student.md`](agents/research-student.md). |
 | [`unslop`](skills/unslop) | Code review against strict simplicity rules: short names, no wrappers or utils dumps, one data type, small pure functions, tests on the real code. |

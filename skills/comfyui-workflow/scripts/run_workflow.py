@@ -248,24 +248,29 @@ def find_node(wf, oi, title):
     return hits[0], defs
 
 
+def resolve(wf, oi, item):
+    # [Agent] Titles may contain "=" and "." ("Clothes · off = sheet · on = photo's"), so try every "=" from the left and
+    # every "." from the right until a real node title matches: "LoRAs.lora_4.strength=0.8" is node "LoRAs", widget
+    # "lora_4", key "strength", value 0.8.
+    for i, ch in enumerate(item):
+        if ch != "=":
+            continue
+        parts = item[:i].split(".")
+        for cut in range(len(parts) - 1, 0, -1):
+            try:
+                n, defs = find_node(wf, oi, ".".join(parts[:cut]))
+            except SystemExit:
+                continue
+            return n, defs, parts[cut:], item[i + 1:]
+    raise SystemExit(f"--set {item!r}: no node with that title; use --list")
+
+
 def set_value(wf, oi, item):
-    target, raw = item.split("=", 1)
+    n, defs, path, raw = resolve(wf, oi, item)
     try:
         value = json.loads(raw)
     except json.JSONDecodeError:
         value = raw
-    # [Agent] Titles may contain dots, so try every split point from the right: "LoRAs.lora_4.strength" is node "LoRAs",
-    # widget "lora_4", key "strength".
-    parts = target.split(".")
-    for cut in range(len(parts) - 1, 0, -1):
-        title, path = ".".join(parts[:cut]), parts[cut:]
-        try:
-            n, defs = find_node(wf, oi, title)
-            break
-        except SystemExit:
-            continue
-    else:
-        raise SystemExit(f"--set {item!r}: no node with that title; use --list")
     name, key = path[0], path[1:]
     linked = {i["name"]: i["link"] for i in n.get("inputs", []) if i.get("link") is not None}
     if name in linked:
@@ -380,10 +385,10 @@ def call(server, path, body=None):
 
 def upload(server, item):
     """--set "Title.input=@/local/file": send the file to the server's input folder and set the name it got."""
-    target, raw = item.split("=", 1)
-    if not raw.startswith("@"):
+    target, sep, raw = item.rpartition("=@")
+    if not sep:
         return item
-    p = Path(raw[1:]).expanduser()
+    p = Path(raw).expanduser()
     if not p.is_file():
         raise SystemExit(f"--set {item!r}: no file {p}")
     # [Agent] /upload/image stores any file (pictures, clips, audio) in input/; overwrite keeps the name stable across runs.
