@@ -119,15 +119,14 @@ The line's goal and number, what is already known (numbers, paths, links), the p
   - If it is already published, the line becomes "adopt and measure", and the page cites the paper.
   - If a paper contradicts it, re-test before anything builds on it.
   - Audit work done so far the same way: earlier conclusions in PLAN.md are re-checked when a newer paper touches them.
-- **Judge gross defects, not small scores.** The automatic judge looks only for clear, measurable failures, each against the source or the baseline:
-  - pose off (body or hand keypoints far from the source's);
-  - a missing, extra or broken arm, hand or limb;
-  - the face missing or turning back into the source person;
-  - drawn guide lines, subtitles or overlays painted in;
-  - a big timing slip (a move clearly early or late);
-  - a visible jump at a join.
+- **Judge gross defects, not small scores.** The automatic judge looks only for clear, measurable failures of the task's output, each against the source, the baseline or a fixed check set. Write the list per task before the first run (examples by task in `example.md`):
+  - **video:** pose off, a missing or extra limb, the face lost, overlays painted in, big timing slips, visible joins;
+  - **images:** a missing or extra object or finger, a broken face, garbled text, the subject not there;
+  - **LLMs and text:** wrong answers on a fixed check set, broken output format, repetition loops, truncation;
+  - **search and embeddings:** known pairs falling out of the top k, empty or duplicate results;
+  - **kernels and speed work:** outputs past a stated tolerance against the reference, crashes, OOM, a speed-up that isn't there.
 
-  A lever dies only for one of those, for a visible loss on a side by side (the owner's eye final), or for no speed or memory gain. Small score deltas (identity −0.02, sharpness −5 %) are never a verdict, so never set a kill bar on them. A tight numeric bar that kills a working lever is a recurring failure.
+  A lever dies only for one of those, for a visible or obvious loss the owner confirms, or for no speed or memory gain. Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1) are never a verdict, so never set a kill bar on them. A tight numeric bar that kills a working lever is a recurring failure.
 - Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.

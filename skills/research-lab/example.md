@@ -67,3 +67,29 @@ order: newest-first
 - **Student ids** (`S-01`, `S-02`, …) are given at spawn and never reused. Every section title starts with the id.
 - **The index** has one `###` block per student, never a table, each with Question, Result so far, and GPU · model.
 - **Every render card** carries ⏱, s per video second and VRAM. Results never hide in a folded section.
+
+## Gross-defect judges for other kinds of research
+
+The page layout stays the same for any program. What changes is the output, the baseline and the defect list the judge checks. Write the list before the first run. Numbers like these are info, never a verdict: identity, sharpness, perplexity, a recall@10 move under a point.
+
+| program | output | baseline | gross defects the judge flags | dies only if |
+|---|---|---|---|---|
+| Faster long-video generation | a 15 s video | the same job, dense, one 5 s run per GPU | pose off; a missing or extra limb; the face lost; guides or subtitles painted in; a move > 0.25 s early or late; a visible join | a defect, a visible loss on a side by side, or no speed-up |
+| Faster image model (e.g. fewer steps, int8) | 20 fixed prompts × 2 seeds | the original model, same prompts and seeds | the subject missing; extra fingers or limbs; broken faces; garbled text that the prompt asked to be clean | a defect on more images than the baseline has, or no speed-up |
+| LLM inference speed-up (e.g. quantization, speculative decoding) | answers to a fixed check set (100 Q&A, 20 JSON tasks) | the full-precision model on the same set | a wrong answer where the baseline is right; invalid JSON; repetition loops; truncation | more wrong answers than the baseline's run-to-run spread, or no tokens/s gain |
+| Faster embedding search | top-10 results for 200 known query → document pairs | the exact (brute-force) search | a known pair falling out of the top 10; empty or duplicate results | more pairs lost than an agreed small count, or no QPS / memory gain |
+| Custom GPU kernel | the output tensors | the reference kernel on the same inputs | max abs difference over the stated tolerance; NaN or Inf; crash or OOM at the target shapes | any of those, or slower than the reference |
+
+### One index block per kind of student, so the page reads the same everywhere
+
+```mdx
+### 📄 S-04 · [quant](<link>#quant): int8 weights for the 8B model
+**Question:** Does int8 keep the answers on the check set while decoding faster?
+**Result so far:** 1.7× tokens/s; 0 new wrong answers out of 100; JSON valid 20/20.
+*fast GPU · Sonnet*
+
+### 📄 S-05 · [ann](<link>#ann): HNSW instead of brute force
+**Question:** Does HNSW keep the known pairs in the top 10 at 10× the QPS?
+**Result so far:** 12× QPS; 2 of 200 pairs drop to rank 11–12, shown on the page.
+*CPU box · Sonnet*
+```
