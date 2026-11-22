@@ -5,7 +5,7 @@ Agent skills from my day-to-day work: video generation in ComfyUI, research with
 | Skill | What it does |
 |---|---|
 | [`prompt-writing`](skills/prompt-writing) | Prompts for MiniMax H3 video, by task: **character swap** (a character from her sheet replaces the whole person, motion from the source clip) and **face-only swap**. Each task has a template, a pre-render checklist, a symptom → fix table with evidence strength, failed → fixed examples, and `h3_audit.py`, which checks every prompt before a render. |
-| [`comfyui-workflow-edit`](skills/comfyui-workflow-edit) | Edit ComfyUI UI workflows by script without wrecking the layout: two-row groups, short titles, real node sizes, no overlaps. `check_layout.py` must print `OK` before the agent hands anything over. |
+| [`comfyui-workflow`](skills/comfyui-workflow) | Edit ComfyUI UI workflows by script without wrecking the layout: two-row groups, short titles, real node sizes, no overlaps. `check_layout.py` must print `OK` before the agent hands anything over. |
 | [`civitai`](skills/civitai) | Search, compare, inspect and download Civitai models, LoRAs and workflows with the official CLI. It never generates (that spends Buzz) unless asked. |
 | [`research-lab`](skills/research-lab) | Run a research program as the professor: pick lines that don't overlap, give each to a research-student agent, schedule the one shared GPU, check every result yourself. Needs [`agents/research-student.md`](agents/research-student.md). |
 | [`unslop`](skills/unslop) | Code review against strict simplicity rules: short names, no wrappers or utils dumps, one data type, small pure functions, tests on the real code. |

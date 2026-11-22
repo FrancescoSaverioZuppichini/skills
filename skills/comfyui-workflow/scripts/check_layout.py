@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a ComfyUI UI workflow JSON for layout mistakes a reviewer keeps catching by eye.
+"""Check a ComfyUI UI workflow JSON for the layout mistakes a reviewer catches by eye.
 
   python3 check_layout.py workflow.json        -> prints problems, or OK; exit 1 on problems
 """
