@@ -139,9 +139,9 @@ The line's goal and number, what is already known (numbers, paths, links), the p
 ## 8. Results
 
 - One live page, in the format the rules file sets. Default: the goal and baseline, the one comparison table (you update it when a number lands, with the hold and time it came from), a notes list of everything known, then one mini paper per research line.
-- **Every student gets an id, `S-01`, `S-02`, …, at spawn, in spawn order.** The id is never reused or renumbered, and it is the student's name everywhere: the page, the index, PLAN.md, SCHEDULE.md, LOG.md lines, card ids and save prefixes.
-- **Each student's section is exactly one mini paper, and its title starts with the id:** `📄 S-03 · <student> · <question or claim> <✅/❌/⏳>`. Body: Now (2 lines), Abstract, Thesis + kill bar, What we did, Results (every card with wall time, speed and memory), What it means, Details. Logs and planning go to the log file, not the page.
-- **The page opens with an index section**, before anything else: one line linking the watch-first, program and survey sections, then one block per student paper, in id order, in Markdown (not a table): `### 📄 S-NN · [student](link to their section): short title`, then `**Question:**` in one sentence, `**Result so far:**` in one sentence with the headline number, and the GPU or machine plus the model in italics. Add a block the moment you spawn a student, and update its result line when a number lands.
+- **Every student gets an id `S<round>-<nn>` at spawn:** `S1-01` is round 1's first student, `S2-01` round 2's first new one, in spawn order within the round. A student who carries on into a later round keeps their original id. Ids are never reused or renumbered, and they are the student's name everywhere: the page, the index, PLAN.md, SCHEDULE.md, LOG.md lines, card ids and save prefixes.
+- **Each student's section is exactly one mini paper, and its title starts with the id:** `📄 S1-03 · <student> · <question or claim> <✅/❌/⏳>`. Body: Now (2 lines), Abstract, Thesis + kill bar, What we did, Results (every card with wall time, speed and memory), What it means, Details. Logs and planning go to the log file, not the page.
+- **The page opens with an index section**, before anything else: one line linking the watch-first, program and survey sections, then one block per student paper, in id order, in Markdown (not a table): `### 📄 S<round>-<nn> · [student](link to their section): short title`, then `**Question:**` in one sentence, `**Result so far:**` in one sentence with the headline number, and the GPU or machine plus the model in italics. Add a block the moment you spawn a student, and update its result line when a number lands.
 - **Right under the index: a "watch first" section** with the latest full-length outputs side by side. Each one carries its wall time and its speed (render seconds per output second). Results never hide in a folded section.
 - **Several machines:** each student always runs on the same machine. The fast machine is production: full-length runs and integrating winning levers. The slower one is the bench: short A/B tests of new levers against its own baseline of the same job. Each machine gets its own baseline, its own lock and its own queue in SCHEDULE.md, and its own row in the index.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context, that reads the page as a computer-science graduate outside the field and lists everything missing, unexplained, oddly worded or strange (a term never defined, a number without its unit or baseline, a figure without a caption, English that reads badly). Hand the list to the authors, fix, and repeat until nothing serious is left.
@@ -155,12 +155,12 @@ A full example page (index, watch first, program, one mini paper) is in `example
 <Section id="index" title="Index · N students, N mini papers" open>
 **Start here:** [▶ Watch first](<link>#watch) · [Program](<link>#program) · [Survey](<link>#survey)
 
-### 📄 S-01 · [student-a](<link>#student-a): short title
+### 📄 S1-01 · [student-a](<link>#student-a): short title
 **Question:** the one question this student's paper answers.
 **Result so far:** one sentence with the headline number (or "running: …").
 *GPU or machine · model*
 
-### 📄 S-02 · [student-b](<link>#student-b): short title
+### 📄 S1-02 · [student-b](<link>#student-b): short title
 **Question:** …
 **Result so far:** …
 *GPU or machine · model*

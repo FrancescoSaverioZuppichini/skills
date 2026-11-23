@@ -12,17 +12,17 @@ order: newest-first
 <Section id="index" title="Index · 3 students, 3 mini papers" open>
 **Start here:** [▶ Watch first](<link>#watch) · [Program](<link>#program) · [Survey](<link>#survey)
 
-### 📄 S-01 · [windows](<link>#windows): Long clips in windows
+### 📄 S1-01 · [windows](<link>#windows): Long clips in windows
 **Question:** Can a 15 s clip render at 1 MP in windows, each with its own guide slice, with no visible joins?
 **Result so far:** 15 s in 371 s (24.6 s per video second); join 2 fails, fix running.
 *fast GPU · Sonnet*
 
-### 📄 S-02 · [spark](<link>#spark): Sparse attention from a paper
+### 📄 S1-02 · [spark](<link>#spark): Sparse attention from a paper
 **Question:** Does the paper's block-sparse attention speed up the render without hurting the face?
 **Result so far:** running: 5 s A/B at 20 % and 40 % density.
 *slow GPU (bench) · Opus*
 
-### 📄 S-03 · [judge](<link>#judge): Timing and quality judge
+### 📄 S1-03 · [judge](<link>#judge): Timing and quality judge
 **Question:** Does each render keep the source's timing, identity and sharpness?
 **Result so far:** time anchors in the prompt cut the lag from 18 frames to 0.6.
 *CPU · Sonnet*
@@ -46,7 +46,7 @@ order: newest-first
 | S-01 windows E2 | 768×1376 | 371 s | 24.6 | 23.8 GB | 2.5 / 15.6 | 0.697 | ⚠ join 2 |
 </Section>
 
-<Section id="windows" title="📄 S-01 · windows · Windows keep 1 MP 15 s renders in step ⏳">
+<Section id="windows" title="📄 S1-01 · windows · Windows keep 1 MP 15 s renders in step ⏳">
 **Now:** E3 running (anchored prompts). Next: 30 s.
 
 **Abstract.** Three or four plain sentences: the question, what we did, and the headline number.
@@ -64,7 +64,7 @@ order: newest-first
 ```
 
 **Rules this example shows:**
-- **Student ids** (`S-01`, `S-02`, …) are given at spawn and never reused. Every section title starts with the id.
+- **Student ids** (`S1-01`, `S1-02`, … for round 1; `S2-01`, … for students new in round 2) are given at spawn and never reused. Every section title starts with the id.
 - **The index** has one `###` block per student, never a table, each with Question, Result so far, and GPU · model.
 - **Every render card** carries ⏱, s per video second and VRAM. Results never hide in a folded section.
 
@@ -83,12 +83,12 @@ The page layout stays the same for any program. What changes is the output, the 
 ### One index block per kind of student, so the page reads the same everywhere
 
 ```mdx
-### 📄 S-04 · [quant](<link>#quant): int8 weights for the 8B model
+### 📄 S1-04 · [quant](<link>#quant): int8 weights for the 8B model
 **Question:** Does int8 keep the answers on the check set while decoding faster?
 **Result so far:** 1.7× tokens/s; 0 new wrong answers out of 100; JSON valid 20/20.
 *fast GPU · Sonnet*
 
-### 📄 S-05 · [ann](<link>#ann): HNSW instead of brute force
+### 📄 S1-05 · [ann](<link>#ann): HNSW instead of brute force
 **Question:** Does HNSW keep the known pairs in the top 10 at 10× the QPS?
 **Result so far:** 12× QPS; 2 of 200 pairs drop to rank 11–12, shown on the page.
 *CPU box · Sonnet*
