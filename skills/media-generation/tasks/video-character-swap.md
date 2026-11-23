@@ -65,7 +65,7 @@ mkdir -p "$OUT/prompt"
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
-   Then look at the joined guide: no frame where she is unblurred.
+   Then look at the joined guide: no frame where she is unblurred. A clip that fades to black at the end stops `motion_guide` on its last shot ("SAM lost the person on N frames"): end that shot before the black frames in `$OUT/shots.txt` and rerun, as long as it still covers the 17n+5 frames the workflow renders.
 6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the person's three values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
 7. **Audit** (exit 1 = fix and rerun), then reread every move against the strips (checks 10–12):
    ```bash
