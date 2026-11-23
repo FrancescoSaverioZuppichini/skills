@@ -22,11 +22,12 @@
 | Outfit sentence | in every shot | never |
 | Template | the character-swap template | the face-only template below |
 | Her clothes in the prompt | never named | named exactly, `{CLOTHES}` |
+| Her hair in every shot | from the sheet's line | the character's hair again, `{HAIR}` |
 
 ## Rules for this task
 - **Hide only her face and hair.** The model keeps what it can see, so her clothes stay.
 - **Name exactly what she wears** in `{CLOTHES}`: every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery. Example: `a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings`. The source-wear ban does not apply to this slot; the audit exempts it. Unnamed, H3 can redress her (2026-11-23, below).
-- **Never name her hair.** It comes from `<Picture 1>`.
+- **Her hair is the character's, in every shot:** `{HAIR}` repeats the hair part of her line (The person, below). Never the source's hair.
 - **No outfit sentence**: it would dress her in the sheet's outfit.
 - **Face and hair only:** her body shape is not named, because the body stays the source's.
 
@@ -37,7 +38,7 @@
    (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt "head, hair" --mask-grow 0.02 --include head,face)
    cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
    ```
-6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
+6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears and `{HAIR}` her hair (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
 7. Audit (it picks this template from "only her face, identity and hair"), then check the moves against the strips:
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts" --seconds "$SECONDS"
@@ -46,15 +47,18 @@
 ## The person
 The workflow has no persona node. Who she is comes from two inputs:
 - `Picture 1 · sheet`: her picture (a face picture is enough).
-- `Swap prompt`: the whole prompt. Her line, `{FACE_LINE}`, is one sentence in its `<Subject 1>` line.
+- `Swap prompt`: the whole prompt. Her line, `{FACE_LINE}`, is one sentence in its `<Subject 1>` line; her hair, `{HAIR}`, is repeated in every shot.
 
-Our character's `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
+Our character's values:
+- `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
+- `{HAIR}`: `long, straight and medium chestnut-brown`
 
-Another person: change only those two inputs, her line written the same way.
+Another person: change only those two inputs, her values written the same way.
 ```bash
 --set "Picture 1 · sheet.image=@/abs/her-face.png" \
---set "Swap prompt.value=$(cat "$OUT/prompts/face.txt")"   # her line in place of this one, e.g.
-# She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.
+--set "Swap prompt.value=$(cat "$OUT/prompts/face.txt")"   # her values in place of these, e.g.
+# {FACE_LINE}: She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.
+# {HAIR}: long, straight and ash-blonde, with darker roots and wispy bangs
 ```
 
 ### Template
@@ -77,7 +81,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. {MOVES} {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -105,7 +109,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1], [Shot 2]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. {MOVES} {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -115,7 +119,7 @@ N/A
 ```
 
 **Several shots** (open: never rendered face-only; same rules as the character swap):
-- Later shot: `[Shot {N}] At {TIME}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. {MOVES} {CAMERA}`
+- Later shot: `[Shot {N}] At {TIME}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA}`
 - Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
 
 **No sound** (the only allowed changes): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman's face and hair and the blur are not kept."; write a new `overall_soundscape`.
@@ -136,7 +140,7 @@ $RUN minimax-h3-reference-to-video \
 The character swap's checks, then on a synced side by side with the source: her clothes match the source, and her hair is the character's, not the source's hairstyle.
 
 ## Lessons (dated, evidence)
-- 2026-11-23 · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then), open on hair.
+- 2026-11-23 · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then); hair named per shot since then (`{HAIR}`), first test pending.
 - 2026-11-17 · Six clips × 1 seed (3.75 s, 551–690-word prompts on this template): the character's face and hair with the source's own clothes on 6 of 6; one clip kept the source's pulled-back hairstyle. Judged by the agent that ran them; no person rated them. Medium.
 - 2026-11-17 · Those runs used the undressed body sheet; the dressed sheet (the user's call, 2026-11-19) has no face-only render yet. Open.
 - Source hairstyle stays (pulled back, bun): the character swap fixed it with a wider blur (`--mask-grow 0.05`); not tried here. Open.
