@@ -30,6 +30,8 @@ $RUN <workflow> --list      # inputs and groups, before your first run of a work
 
 `--set "Title.input=@/local/file"` uploads a local file into that loader.
 
+The video tasks also run [cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools) (shots, guides, colour match), cloned on every GPU machine. Change it on the test machine, push, pull on the others: every clone on the same commit with a clean tree before a run.
+
 ## Rules for every task
 1. **Ask before you guess.** Each task lists what to ask when the request doesn't say: which character sheet, which outfit, which part of the clip, sound or not.
 2. **Prompts are general.** Write what is true for this input, in the task's template; never tune a prompt to make one result pass.
