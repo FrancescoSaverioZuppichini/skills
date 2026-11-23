@@ -100,8 +100,12 @@ def audit(t, seconds=None):
     vret = " ".join(l for l in ra.splitlines() if l.startswith("<Video 1>"))
     # [Agent] The sheet's own outfit may use any garment word (a new outfit is often jeans or boots): read it from the prompt's
     # two outfit slots and exempt only that text from the source-wear list.
+    # [Agent] A face-only swap names the source's own clothes on purpose ({CLOTHES}, "She wears ...."): exempt that sentence too.
     worn = tl
-    for s in re.findall(r"outfit she wears there \(([^)]*)\)", tl) + re.findall(r"she wears the outfit of <subject 1> in every frame: ([^.]*)\.", tl):
+    exempt = re.findall(r"outfit she wears there \(([^)]*)\)", tl) + re.findall(r"she wears the outfit of <subject 1> in every frame: ([^.]*)\.", tl)
+    if kind == "face":
+        exempt += re.findall(r"\bshe wears ([^.]*)\.", tl)
+    for s in exempt:
         worn = worn.replace(s, "")
     c = {
         "1 banned: overlays": not re.search(STICK, tl),
@@ -120,7 +124,9 @@ def audit(t, seconds=None):
         "9 length (--seconds for clips over 3 s)": len(t.split()) <= limit(n, seconds),
         # [Agent] The outfit sentence dresses her in the sheet's outfit: required in every shot of a character swap (nude
         # renders without it), wrong for a face-only swap, where she keeps her own clothes.
-        "8 outfit sentence per shot": tl.count("she wears the outfit of <subject 1> in every frame:") == (n if kind == "character" else 0),
+        # [Agent] A face-only swap names her own clothes instead, one "She wears {CLOTHES}." per shot (too short for the fixed-text check).
+        "8 outfit / clothes sentence per shot": (tl.count("she wears the outfit of <subject 1> in every frame:") == n) if kind == "character"
+            else (tl.count("she wears the outfit of") == 0 and len(re.findall(r"\bshe wears ", tl)) == n),
     }
     miss = [x for x in fixed if norm(x) not in norm(t)] + [x for x, rx in slotted if not rx.search(norm(t))]
     c["9 fixed text verbatim"] = not miss
