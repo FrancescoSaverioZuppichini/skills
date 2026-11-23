@@ -55,7 +55,7 @@ Another person: change only those two inputs, her line written the same way.
 # She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.
 ```
 
-## Template
+### Template
 `{…}` is filled per clip. Everything else is fixed text, copied word for word.
 
 ```
