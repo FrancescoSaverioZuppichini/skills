@@ -81,9 +81,8 @@ mkdir -p "$OUT/prompt"
 
 ## Per-sheet values (the sheet in use, copied verbatim; a new sheet gets its own)
 - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
-- `{CHARACTER_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
+- `{CHARACTER_LINE}` (our character; another person gets her own line, written the same way): `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
 
-**Another character (persona):** `<Picture 1>` and these lines always describe the same person. For a new character, load her picture (`--set "Picture 1 · sheet.image=@/abs/her.png"`) and write her line from that picture, in the same shape: age, hair (length, texture, colour, roots or bangs when they show) and eye colour, then her build ("petite and slim"); a new outfit also needs its own `{OUTFIT}` and `{OUTFIT_LOCK}` (step 0). Only what the picture shows; never the source woman's look. Example for a blonde face: `She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.`
 - `{OUTFIT_LOCK}`: `the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips`
 
 ## Writing the slots
@@ -200,7 +199,7 @@ $RUN minimax-h3-reference-to-video \
   --set "REFINE on / off.value=false" \
   --set "DE-ROPE on / off.value=false" \
   --set "Spark-H3 on / off.value=true"
-# another sheet or character: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" (her per-sheet values are already in the prompt)
+# new sheet: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" (its per-sheet values are already in the prompt)
 ```
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound.
 - Time (3090, models loaded): 3 s one pass 1.7 min with Spark, 2.1 min without (2026-11-23); REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.
