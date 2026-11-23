@@ -30,9 +30,9 @@
 
 ## Steps
 1–4 as in `video-character-swap.md` (the part to render, shots, close-ups, sound).
-5. Guide: SAM 3 runs "head" and "hair" as two text prompts and pools both masks; skeleton and eyebrow + mouth dots are drawn on top. Free ComfyUI's GPU memory first (one build ran out of memory while ComfyUI held 18.5 GB).
+5. Guide: SAM 3 runs "head" and "hair" as two text prompts and pools both masks; only the head's pose lines and the eyebrow + mouth dots are drawn on top (`--include head,face`). Her body stays visible, so it gets no skeleton: H3 sees it, and lines over it are what H3 can paint. Free ComfyUI's GPU memory first (one build ran out of memory while ComfyUI held 18.5 GB).
    ```bash
-   (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt "head, hair" --mask-grow 0.02)
+   (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt "head, hair" --mask-grow 0.02 --include head,face)
    cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
    ```
 6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is the per-sheet value below; there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
