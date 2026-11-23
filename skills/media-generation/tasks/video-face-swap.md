@@ -115,7 +115,8 @@ $RUN minimax-h3-reference-to-video \
   --set "Video 1 · guide.video=@$OUT/$NAME-guide.mp4" \
   --set "Swap prompt.value=$(cat "$OUT/prompts/face.txt")" \
   --set "Seed.noise_seed=1001" \
-  --set "REFINE on / off.value=false"
+  --set "REFINE on / off.value=false" \
+  --set "Spark-H3 on / off.value=true"
 ```
 
 ## Check the result

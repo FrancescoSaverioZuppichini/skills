@@ -2,7 +2,7 @@
 
 **Source:** MiniMax's full-reference prompt guide, the format H3 was trained on (`references/h3-official-ref-guide.md`, verbatim; the community spec is `references/h3-singularity-spec.md`). This file is the short version; each video task builds its fixed template on it.
 
-**Default: ~1 MP** (Size node "from image", 0.92 MP, multiple 32: a 9:16 source renders 736×1312; the guide video is fed at exactly half). REFINE drops the main pass to a 0.50 MP draft by itself and doubles it to 2.1 MP; there is no size to set by hand.
+**Default: ~1 MP** (Size node "from image", 0.92 MP, multiple 32: a 9:16 source renders 736×1312; the guide video is fed at exactly half). REFINE drops the main pass to a 0.50 MP draft by itself and doubles it to 2.1 MP; there is no size to set by hand. **Spark-H3** (group 8, on by default) makes the main pass ~20 % faster with the same video; **Lean attention** keeps sage from crashing on long clips. How the guide video reaches H3: the video task's Run section.
 
 ## How H3 prompts are made
 - H3 is trained on long prompts written by MiniMax's closed rewriter from a short request plus the inputs; MiniMax calls that step "critical to the quality of the final output". We rebuild the rewriter's output with fixed task templates plus slots written from the source.

@@ -14,6 +14,8 @@
 
 **REFINE and DE-ROPE stay off; never ask about them.** Suggest REFINE only when the user complains about a soft or low-quality face. Suggest DE-ROPE only when the user brings it up or complains about the motion (smear, wobble, a wrong head turn).
 
+**Spark-H3 stays on** (group 8, on by default): sparse attention on the main pass, ~20 % faster, the same video. Turn it off only for an exact dense render.
+
 ## Steps
 Run cv-tools where it is installed (the GPU machine); look at the strips wherever you are. Over ssh, `ssh <host> 'bash -s' <<'EOF'` … `EOF` keeps the variables remote.
 
@@ -183,7 +185,9 @@ N/A
 **Length** (the fixed text alone is ~340 words): a 3 s single shot lands at 540–670 words. Per shot: `{MOVES}` 30–45 words per second, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence; trim `{MOVES}` first. The audit fails above 750 words + 150 per later shot + 45 per second past 3 s (`--seconds`).
 
 ## Run
-Default size: ~1 MP (Output size: from image, 0.92 MP, multiple 32; a 9:16 clip renders 736×1312, the guide is fed at half that). Sheet, models and sampler are fixed in the workflow.
+Default size: ~1 MP (Output size: from image, 0.92 MP, multiple 32; a 9:16 clip renders 736×1312). Sheet, models and sampler are fixed in the workflow.
+
+**How the guide reaches H3:** `Video 1 · guide` loads the whole guide at 24 fps with its sound; `Clip length` cuts it to the longest 17n+5 frames; `Guide feed size (half)` (0.23 MP) and `Guide feed` shrink it to half the output (368×656 for 9:16); `References` hands it to H3 as `<Video 1>`, next to the sheet as `<Picture 1>` and the clip's sound. H3 snaps it to its 32 px grid (384×640), its text encoder reads it at 2 fps, and its frames join the video tokens, so a bigger guide costs time: the full-size guide (704×1280) was 3–4× slower for little gain (2026-11-23).
 
 ```bash
 $RUN minimax-h3-reference-to-video \
@@ -192,11 +196,12 @@ $RUN minimax-h3-reference-to-video \
   --set "Seed.noise_seed=1001" \
   --set "Clip sound on / off.value=true" \
   --set "REFINE on / off.value=false" \
-  --set "DE-ROPE on / off.value=false"
+  --set "DE-ROPE on / off.value=false" \
+  --set "Spark-H3 on / off.value=true"
 # new sheet: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" (its per-sheet values are already in the prompt)
 ```
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound.
-- Time (3090, models loaded): 3 s one pass 2.8 min; REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.
+- Time (3090, models loaded): 3 s one pass 1.7 min with Spark, 2.1 min without (2026-11-23); REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.
 - REFINE (R450-2): the toggle alone drops the main pass to a 0.50 MP draft, the learned upscaler doubles it to 2.1 MP, then 2 Pika steps from noise 0.45. No size to set by hand. `Masked refine on / off` (default on) redraws only her plus a margin.
 
 ## Check the result
