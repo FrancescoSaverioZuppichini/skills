@@ -89,7 +89,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1>, whether she speaks or sings; the soundtrack itself is unchanged. {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -117,7 +117,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1], [Shot 2]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1>, whether she speaks or sings; the soundtrack itself is unchanged. {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
