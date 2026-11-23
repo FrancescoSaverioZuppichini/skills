@@ -48,7 +48,7 @@ mkdir -p "$OUT/prompt"
    A=0; B=26
    ffmpeg -nostdin -y -i "$CLIP" -vf "select='between(n,$A,$B)*not(mod(n,2))',scale=480:-2,tile=7x2" -frames:v 1 -vsync 0 "$OUT/dense-$A-$B.png"
    ```
-4. **Sound.** Empty = silent clip (no-sound variant). Otherwise listen, or read the spectrogram: stacked bands = a voice or singing, a regular beat = music. When she speaks or sings, get her words with their times from a transcript (speech-to-text) for the `<d>` lines in `{MOVES}`.
+4. **Sound.** Empty = silent clip (no-sound variant). Otherwise listen, or read the spectrogram: stacked bands = a voice or singing, a regular beat = music. Her words are never transcribed: the template's lip-sync sentence keeps her lips on the clip's sound.
    ```bash
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
@@ -120,7 +120,7 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 | `{SOUND}` | the kinds of sound, in order; her own words go in `{MOVES}`, not here; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
-- **Her mouth:** every mouth beat in order, with what the lips and jaw do ("her lips part", "she opens her mouth wide", "the tip of her tongue shows", "she presses her lips into a pout"). When she speaks or sings, tag her voice `(S1)` after her subject tag and put her words where she says them, in MiniMax's dialogue format: `(S1) says, <d>[English] …</d>` or `(S1) sings along, <d>[English] …</d>`, copied from a transcript of the clip (step 4), never guessed.
+- **Her mouth:** every mouth beat in order, with what the lips and jaw do ("her lips part", "she opens her mouth wide", "the tip of her tongue shows", "she presses her lips into a pout"). Never write her words or `<d>` lines: the fixed lip-sync sentence carries the sound.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces, never what covers the eyes. **Objects she holds** stay: name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one ("filmed from a phone standing still" is fine: that phone is the camera).
 - **Her head leaves the frame:** keep the fixed face line anyway and write the move ("the camera drops to her waist").
