@@ -48,7 +48,7 @@ mkdir -p "$OUT/prompt"
    A=0; B=26
    ffmpeg -nostdin -y -i "$CLIP" -vf "select='between(n,$A,$B)*not(mod(n,2))',scale=480:-2,tile=7x2" -frames:v 1 -vsync 0 "$OUT/dense-$A-$B.png"
    ```
-4. **Sound.** Empty = silent clip (no-sound variant). Otherwise listen, or read the spectrogram: stacked bands = a voice or singing, a regular beat = music.
+4. **Sound.** Empty = silent clip (no-sound variant). Otherwise listen, or read the spectrogram: stacked bands = a voice or singing, a regular beat = music. When she speaks or sings, get her words with their times from a transcript (speech-to-text) for the `<d>` lines in `{MOVES}`.
    ```bash
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
@@ -110,10 +110,10 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 | `{MOVES}` | **4–6 sentences per 3 s of the shot** (about 30–45 words per second; at least 2 for a very short shot), counting the facing sentence, at most two gestures per sentence (expressions and the wind don't count), in order, each with its verb ("covers her mouth and laughs"). **Say which way her body faces and write a turn only if the frames show one.** A turn = you see her side or her back; while her chest faces the camera it's a sway ("her hips sway", "her weight shifts", never "her body angles"). If she never turns, say so. Can't tell a direction: leave it out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns." |
 | `{CAMERA}` | one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, following, a swing or a tilt, as the strip shows; a camera move only if the background moves. The background sliding to the picture left = the camera swings to the picture right | "The camera stays still, matching…" |
 | `{LIGHT}` | "the same <light> as the <scene>" | "the same <light> as the <place>" |
-| `{SOUND}` | the kinds of sound, in order; speech and lyrics never transcribed; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
+| `{SOUND}` | the kinds of sound, in order; her own words go in `{MOVES}`, not here; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
-- **Lips move:** "her lips move"; say she speaks or sings only if you heard it.
+- **Her mouth:** every mouth beat in order, with what the lips and jaw do ("her lips part", "she opens her mouth wide", "the tip of her tongue shows", "she presses her lips into a pout"). When she speaks or sings, tag her voice `(S1)` after her subject tag and put her words where she says them, in MiniMax's dialogue format: `(S1) says, <d>[English] …</d>` or `(S1) sings along, <d>[English] …</d>`, copied from a transcript of the clip (step 4), never guessed.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces, never what covers the eyes. **Objects she holds** stay: name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one ("filmed from a phone standing still" is fine: that phone is the camera).
 - **Her head leaves the frame:** keep the fixed face line anyway and write the move ("the camera drops to her waist").
