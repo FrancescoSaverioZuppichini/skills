@@ -14,10 +14,13 @@ Optional, never run unasked. After a video swap, measure (about 1 s). When the l
 - The seconds to sample: leave out dissolves and fades.
 
 ## Run
+Render it twice, full (`--strength 1`) and half (`--strength 0.5`), and let the user pick on the page: when the render's background is already close to the source's colour, half keeps her face natural where full darkens it too.
 ```bash
 CV=/abs/path/cv-tools
-F=$(cd "$CV" && .venv/bin/python -m cv_tools.color_match --source "$CLIP" --render "$RENDER" --masks "$OUT/guide-1/masks.npz" --end <SECONDS>)
-ffmpeg -nostdin -y -i "$RENDER" -vf "$F" -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy "$OUT/matched.mp4"
+for S in 1 0.5; do
+  F=$(cd "$CV" && .venv/bin/python -m cv_tools.color_match --source "$CLIP" --render "$RENDER" --masks "$OUT/guide-1/masks.npz" --end <SECONDS> --strength $S)
+  ffmpeg -nostdin -y -i "$RENDER" -vf "$F" -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy "$OUT/matched-$S.mp4"
+done
 ```
 - stderr prints the largest shift per channel: that is the number to measure with (run it, read the line, apply nothing).
 - Shots rendered on their own: one fit per shot from its own guide's masks, each applied before the shots are joined.
@@ -29,4 +32,5 @@ ffmpeg -nostdin -y -i "$RENDER" -vf "$F" -c:v libx264 -crf 16 -pix_fmt yuv420p -
 
 ## Lessons
 - 2026-11-23 · a night car clip with a green-yellow grade: H3 rendered neutral colour, largest shift 37–38 levels; the background-only match brought the grade back (approved). A face swap whose colour was fine measured 12–17. The 25-level line rests on these 2 clips. Open.
+- 2026-11-23 · Night drive face swap (dark night car, shift r 40 g 33 b 30): the full match darkened her face red-brown; half kept the night and her face natural; the user: "global half is amazing". Try both every time. Medium (1 clip).
 - 2026-11-23 · Pinning the curve ends at the 0.5 % / 99.5 % levels instead of the darkest and brightest pixel was less stable: up to 38 levels apart between two disjoint frame sets, against 8. Keep the full-range fit. Medium.
