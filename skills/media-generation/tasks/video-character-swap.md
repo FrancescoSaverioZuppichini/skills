@@ -152,7 +152,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1]): attribute_transfer - her face, hair, body and outfit come from <Picture 1>, not from <Video 1>; her skin tone is hers, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 1> performs the motion and expressions of <Subject 2> as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES} {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
+{STYLE} [Shot 1] <Subject 1> performs the motion and expressions of <Subject 2> as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -180,7 +180,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1], [Shot 2]): attribute_transfer - her face, hair, body and outfit come from <Picture 1>, not from <Video 1>; her skin tone is hers, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 1> performs the motion and expressions of <Subject 2> as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES} {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 1> in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+{STYLE} [Shot 1] <Subject 1> performs the motion and expressions of <Subject 2> as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 1> in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -198,7 +198,7 @@ N/A
 - Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
 - `{SCENE_SHORT}`, `{KEPT}`, `{LIGHT}` and `{SOUND}` cover all shots ("the same <light 1> and <light 2> as the two scenes").
 
-**No sound** (only for a clip with no audio stream, or when told not to keep it): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman and the blur are not kept."; `overall_soundscape` becomes, for a silent clip: "Quiet natural ambience of <the scene in 2–5 words>, with no speech and no music." (open: not render-tested), or the new sound you were asked for. In the workflow: `Clip sound on / off` = false.
+**No sound** (only for a clip with no audio stream, or when told not to keep it): the summary prefix becomes `[video editing]`; the lip-sync sentence is dropped; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman and the blur are not kept."; `overall_soundscape` becomes, for a silent clip: "Quiet natural ambience of <the scene in 2–5 words>, with no speech and no music." (open: not render-tested), or the new sound you were asked for. In the workflow: `Clip sound on / off` = false.
 
 **Length** (the fixed text alone is ~340 words): a 3 s single shot lands at 540–670 words. Per shot: `{MOVES}` 30–45 words per second, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence; trim `{MOVES}` first. The audit fails above 750 words + 150 per later shot + 45 per second past 3 s (`--seconds`).
 
@@ -231,6 +231,7 @@ $RUN minimax-h3-reference-to-video \
 |---|---|---|
 | Dots or lines painted on her face or body | remove every word naming the drawing | strong |
 | Her body turns where the clip doesn't; face soft | rewrite the moves from the raw frames; say "never turns" when she doesn't | strong |
+| Her mouth off the clip's sound | the fixed lip-sync sentence in shot 1 (template) | open here; medium on face swaps |
 | Nude, outfit lost | outfit sentence in every shot (template) | strong |
 | Source clothes kept | the whole woman inside the guide's blur (`--mask-prompt person`) | strong |
 | Source hairstyle or accessories come back | `motion_guide --mask-grow 0.05` | medium |
@@ -241,6 +242,7 @@ $RUN minimax-h3-reference-to-video \
 | Stickers, captions disappear | none yet; accepted | open |
 
 ## Lessons (dated, evidence)
+- 2026-11-23 · The face swap's lip-sync sentence (mouth closer to the source on 2 seeds there) is in this template too, on the user's call; not yet tested on a character swap. Open.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
 - 2026-11-14 / 11-16 · Never a ControlNet, for pose or inpainting: wrong timing, wrong hand signs. Strong; the user's hard rule.
 - 2026-11-15 · No 4-step speed LoRA (worse look); Pika runs only on its own 6 knots, never stacked with a speed LoRA. The user's rule.

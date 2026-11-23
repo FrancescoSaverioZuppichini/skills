@@ -118,9 +118,8 @@ def audit(t, seconds=None):
         "1 banned: source wear": not re.search(OLD, worn),
         # [Agent] The two sound variants are all-or-nothing: either every original-sound line is there, or none is.
         "4 sound lines match one variant": sound_ok(t, su, vret),
-        # [Agent] A face-only swap keeps her lips on the clip's sound: the fixed lip-sync sentence, unless the sound is dropped.
-        "4 lip-sync line (face, with sound)": kind != "face" or "audio reuse" not in su
-            or "lip-syncs the vocals in the original sound of <video 1>" in tl,
+        # [Agent] Both swaps keep her lips on the clip's sound: the fixed lip-sync sentence, unless the sound is dropped.
+        "4 lip-sync line (with sound)": "audio reuse" not in su or "lip-syncs the vocals in the original sound of <video 1>" in tl,
         "6 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
         "6 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
         "7 shots + timestamps": shots_pass,
