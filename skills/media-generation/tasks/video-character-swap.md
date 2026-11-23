@@ -231,7 +231,6 @@ $RUN minimax-h3-reference-to-video \
 |---|---|---|
 | Dots or lines painted on her face or body | remove every word naming the drawing | strong |
 | Her body turns where the clip doesn't; face soft | rewrite the moves from the raw frames; say "never turns" when she doesn't | strong |
-| Her mouth off the clip's sound | the fixed lip-sync sentence in shot 1 (template) | open here; medium on face swaps |
 | Nude, outfit lost | outfit sentence in every shot (template) | strong |
 | Source clothes kept | the whole woman inside the guide's blur (`--mask-prompt person`) | strong |
 | Source hairstyle or accessories come back | `motion_guide --mask-grow 0.05` | medium |
@@ -242,7 +241,6 @@ $RUN minimax-h3-reference-to-video \
 | Stickers, captions disappear | none yet; accepted | open |
 
 ## Lessons (dated, evidence)
-- 2026-11-23 · The face swap's lip-sync sentence (mouth closer to the source on 2 seeds there) is in this template too, on the user's call; not yet tested on a character swap. Open.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
 - 2026-11-14 / 11-16 · Never a ControlNet, for pose or inpainting: wrong timing, wrong hand signs. Strong; the user's hard rule.
 - 2026-11-15 · No 4-step speed LoRA (worse look); Pika runs only on its own 6 knots, never stacked with a speed LoRA. The user's rule.
