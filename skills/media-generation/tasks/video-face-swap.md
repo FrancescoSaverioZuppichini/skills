@@ -27,6 +27,7 @@
 ## Rules for this task
 - **Hide only her face and hair.** The model keeps what it can see, so her clothes stay.
 - **Name exactly what she wears** in `{CLOTHES}`: every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery. Example: `a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings`. The source-wear ban does not apply to this slot; the audit exempts it. Unnamed, H3 can redress her (2026-11-23, below).
+- **Her lips follow the clip's sound:** the template's lip-sync sentence stays in every prompt that keeps the sound (once, in shot 1); the no-sound variant drops it.
 - **Her hair is the character's, in every shot:** `{HAIR}` repeats the hair part of her line (The person, below). Never the source's hair.
 - **No outfit sentence**: it would dress her in the sheet's outfit.
 - **Face and hair only:** her body shape is not named, because the body stays the source's.
@@ -81,7 +82,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -109,7 +110,7 @@ retention_analysis:
 <Subject 1> (throughout [Shot 1], [Shot 2]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
 
 detailed_description:
-{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1> wherever she sings along; the soundtrack itself is unchanged. {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
 
 overall_soundscape:
 The original sound of <Video 1>: {SOUND}.
@@ -122,7 +123,7 @@ N/A
 - Later shot: `[Shot {N}] At {TIME}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA}`
 - Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
 
-**No sound** (the only allowed changes): the summary prefix becomes `[video editing]`; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman's face and hair and the blur are not kept."; write a new `overall_soundscape`.
+**No sound** (the only allowed changes): the summary prefix becomes `[video editing]`; the lip-sync sentence is dropped; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman's face and hair and the blur are not kept."; write a new `overall_soundscape`.
 
 ## Run
 The same workflow and toggles as the character swap; only the prompt in `Swap prompt` differs. Same size, time and output.
@@ -140,6 +141,7 @@ $RUN minimax-h3-reference-to-video \
 The character swap's checks, then on a synced side by side with the source: her clothes match the source, and her hair is the character's, not the source's hairstyle.
 
 ## Lessons (dated, evidence)
+- 2026-11-23 · Lip-sync sentence (adapted from a community H3 face-swap workflow): on the full 8.7 s soi clip, 2 seeds, the mouth matched the source better than without it (tongue at 4.5 s, mouth open at 5–6.5 s); the owner: "incredible". On 3 s cuts, prompt wording alone barely moved the mouth; a guide with the real lips pasted back followed best but carried the source's lip piercing. Medium.
 - 2026-11-23 · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then); hair named per shot since then (`{HAIR}`): no visible change on that clip (same seed), kept anyway (owner). Open.
 - 2026-11-17 · Six clips × 1 seed (3.75 s, 551–690-word prompts on this template): the character's face and hair with the source's own clothes on 6 of 6; one clip kept the source's pulled-back hairstyle. Judged by the agent that ran them; no person rated them. Medium.
 - 2026-11-17 · Those runs used the undressed body sheet; the dressed sheet (the user's call, 2026-11-19) has no face-only render yet. Open.
