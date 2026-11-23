@@ -140,7 +140,7 @@ $RUN minimax-h3-reference-to-video \
 The character swap's checks, then on a synced side by side with the source: her clothes match the source, and her hair is the character's, not the source's hairstyle.
 
 ## Lessons (dated, evidence)
-- 2026-11-23 · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then); hair named per shot since then (`{HAIR}`), first test pending.
+- 2026-11-23 · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then); hair named per shot since then (`{HAIR}`): no visible change on that clip (same seed), kept anyway (owner). Open.
 - 2026-11-17 · Six clips × 1 seed (3.75 s, 551–690-word prompts on this template): the character's face and hair with the source's own clothes on 6 of 6; one clip kept the source's pulled-back hairstyle. Judged by the agent that ran them; no person rated them. Medium.
 - 2026-11-17 · Those runs used the undressed body sheet; the dressed sheet (the user's call, 2026-11-19) has no face-only render yet. Open.
 - Source hairstyle stays (pulled back, bun): the character swap fixed it with a wider blur (`--mask-grow 0.05`); not tried here. Open.
