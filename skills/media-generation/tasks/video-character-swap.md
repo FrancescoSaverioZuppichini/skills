@@ -28,7 +28,7 @@ NAME=clip1                    # a unique name for the files sent to ComfyUI
 mkdir -p "$OUT/prompt"
 ```
 
-0. **New outfit only.** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write this sheet's three per-sheet values (below) for the new outfit and use them in the prompt.
+0. **New outfit only.** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write the sheet's three values (The person, below) for the new outfit and use them in the prompt.
 1. **The part to render.** Whole clip: `CLIP="$SRC"`. A part or one shot: cut it, keeping the sound; take the times from step 2's `shots.json` when it's a shot.
    ```bash
    CLIP="$OUT/clip.mp4"
@@ -59,7 +59,7 @@ mkdir -p "$OUT/prompt"
    cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
    ```
    Run it on the whole clip. If the tracker loses her at a cut (look at the guide: any frame where she is not blurred), cut the clip at the cuts, build one guide per shot, and join them in order (`ffmpeg -f concat`), sound included.
-6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the per-sheet values, and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
+6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the person's three values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
 7. **Audit** (exit 1 = fix and rerun), then reread every move against the strips (checks 10–12):
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$SECONDS"
@@ -79,11 +79,21 @@ mkdir -p "$OUT/prompt"
   ```
 - The retention lines say `(throughout [Shot 1], [Shot 2])`, and the closing sentence becomes "It cuts only where <Video 1> cuts."
 
-## Per-sheet values (the sheet in use, copied verbatim; a new sheet gets its own)
-- `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
-- `{CHARACTER_LINE}` (our character; another person gets her own line, written the same way): `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
+## The person
+The workflow has no persona node. Who she is and what she wears come from two inputs:
+- `Picture 1 · sheet`: her dressed character sheet.
+- `Swap prompt`: the whole prompt. Its only per-person text is these three values, copied verbatim.
 
+Our character's dressed sheet:
+- `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
+- `{CHARACTER_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
 - `{OUTFIT_LOCK}`: `the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips`
+
+Another person or outfit: change only those two inputs, her values written the same way.
+```bash
+--set "Picture 1 · sheet.image=@/abs/her-dressed-sheet.png" \
+--set "Swap prompt.value=$(cat "$OUT/prompt/prompt.txt")"   # her three values in place of these
+```
 
 ## Writing the slots
 Write only what the raw frames show: never from the blurred guide, never from another clip, never what you hope the render does. Her look comes only from the sheet: never name the source person's clothes, accessories, hairstyle, hair colour or skin ("her hair" as something that moves is fine; never a hairstyle). Never name anything drawn, hidden or overlaid on the input, not even to exclude it. Fixed text is copied word for word; only `{SLOTS}` change. Keep the clip's sound unless told otherwise.
@@ -199,7 +209,6 @@ $RUN minimax-h3-reference-to-video \
   --set "REFINE on / off.value=false" \
   --set "DE-ROPE on / off.value=false" \
   --set "Spark-H3 on / off.value=true"
-# new sheet: --set "Picture 1 · sheet.image=@/abs/dressed-sheet.png" (its per-sheet values are already in the prompt)
 ```
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound.
 - Time (3090, models loaded): 3 s one pass 1.7 min with Spark, 2.1 min without (2026-11-23); REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.

@@ -35,17 +35,27 @@
    (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt "head, hair" --mask-grow 0.02 --include head,face)
    cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
    ```
-6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is the per-sheet value below; there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
+6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
 7. Audit (it picks this template from "only her face, identity and hair"), then check the moves against the strips:
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts" --seconds "$SECONDS"
    ```
 
-## Per-sheet value
-- `{FACE_LINE}` (our character; another person gets her own line, written the same way, and her picture as `Picture 1`): `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
+## The person
+The workflow has no persona node. Who she is comes from two inputs:
+- `Picture 1 · sheet`: her picture (a face picture is enough).
+- `Swap prompt`: the whole prompt. Her line, `{FACE_LINE}`, is one sentence in its `<Subject 1>` line.
 
+Our character's `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
 
-### Template
+Another person: change only those two inputs, her line written the same way.
+```bash
+--set "Picture 1 · sheet.image=@/abs/her-face.png" \
+--set "Swap prompt.value=$(cat "$OUT/prompts/face.txt")"   # her line in place of this one, e.g.
+# She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.
+```
+
+## Template
 `{…}` is filled per clip. Everything else is fixed text, copied word for word.
 
 ```
