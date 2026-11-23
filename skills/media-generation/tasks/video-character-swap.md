@@ -53,12 +53,19 @@ mkdir -p "$OUT/prompt"
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
    ```
-5. **Guide video** (`<Video 1>`): her whole body blurred inside her SAM mask, the pose drawn on top, the clip's sound kept. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
+5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask, the pose drawn on top. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
    ```bash
-   (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt person --mask-grow 0.05)
-   cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
+   GUIDE=(--mask-prompt person --mask-grow 0.05)
+   python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
+   : > "$OUT/guides.txt"
+   while read -r k a b; do
+     ffmpeg -nostdin -v error -y -ss "$a" -to "$b" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-$k.mp4"
+     (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$OUT/shot-$k.mp4" --output "$OUT/guide-$k" "${GUIDE[@]}")
+     echo "file '$OUT/guide-$k/guide.mp4'" >> "$OUT/guides.txt"
+   done < "$OUT/shots.txt"
+   ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
-   Run it on the whole clip. If the tracker loses her at a cut (look at the guide: any frame where she is not blurred), cut the clip at the cuts, build one guide per shot, and join them in order (`ffmpeg -f concat`), sound included.
+   Then look at the joined guide: no frame where she is unblurred.
 6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the person's three values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
 7. **Audit** (exit 1 = fix and rerun), then reread every move against the strips (checks 10–12):
    ```bash

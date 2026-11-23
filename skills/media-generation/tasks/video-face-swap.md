@@ -34,10 +34,17 @@
 
 ## Steps
 1–4 as in `video-character-swap.md` (the part to render, shots, close-ups, sound).
-5. Guide: SAM 3 runs "head" and "hair" as two text prompts and pools both masks; only the head's pose lines and the eyebrow + mouth dots are drawn on top (`--include head,face`). Her body stays visible, so it gets no skeleton: H3 sees it, and lines over it are what H3 can paint. Free ComfyUI's GPU memory first (one build ran out of memory while ComfyUI held 18.5 GB).
+5. **Guide, one per shot**, with the loop of `video-character-swap.md` step 5 and these flags: SAM 3 runs "head" and "hair" as two text prompts and pools both masks; only the head's pose lines and the eyebrow + mouth dots are drawn on top (`--include head,face`). Her body stays visible, so it gets no skeleton: H3 sees it, and lines over it are what H3 can paint. Free ComfyUI's GPU memory first (one build ran out of memory while ComfyUI held 18.5 GB).
    ```bash
-   (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/guide" --mask-prompt "head, hair" --mask-grow 0.02 --include head,face)
-   cp "$OUT/guide/guide.mp4" "$OUT/$NAME-guide.mp4"
+   GUIDE=(--mask-prompt "head, hair" --mask-grow 0.02 --include head,face)
+   python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
+   : > "$OUT/guides.txt"
+   while read -r k a b; do
+     ffmpeg -nostdin -v error -y -ss "$a" -to "$b" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-$k.mp4"
+     (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$OUT/shot-$k.mp4" --output "$OUT/guide-$k" "${GUIDE[@]}")
+     echo "file '$OUT/guide-$k/guide.mp4'" >> "$OUT/guides.txt"
+   done < "$OUT/shots.txt"
+   ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
 6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears and `{HAIR}` her hair (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
 7. Audit (it picks this template from "only her face, identity and hair"), then check the moves against the strips:
