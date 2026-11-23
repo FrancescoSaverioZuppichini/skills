@@ -44,6 +44,8 @@
 ## Per-sheet value
 - `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
 
+**Another character (persona):** `<Picture 1>` and these lines always describe the same person. For a new character, load her picture (`--set "Picture 1 · sheet.image=@/abs/her.png"`) and write her line from that picture, in the same shape: age, hair (length, texture, colour, roots or bangs when they show) and eye colour (no body: the body stays the source's). Her picture can be a face picture; it needs no sheet. Only what the picture shows; never the source woman's look. Example for a blonde face: `She is a 21-year-old woman with long straight ash-blonde hair with darker roots and wispy bangs, and light brown eyes.`
+
 ### Template
 `{…}` is filled per clip. Everything else is fixed text, copied word for word.
 
@@ -117,6 +119,7 @@ $RUN minimax-h3-reference-to-video \
   --set "Seed.noise_seed=1001" \
   --set "REFINE on / off.value=false" \
   --set "Spark-H3 on / off.value=true"
+# another character: --set "Picture 1 · sheet.image=@/abs/her-face.png" (her {FACE_LINE} is already in the prompt)
 ```
 
 ## Check the result
