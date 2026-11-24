@@ -45,4 +45,5 @@ The video tasks also run [cv-tools](https://github.com/FrancescoSaverioZuppichin
 - `models/<model>.md`: how to prompt the model, from its official guide plus what we measured.
 - `tasks/<task>.md`: the recipe: goal, ask-if-unsure, inputs, what you write, run, check, lessons.
 - `scripts/h3_audit.py <dir>`: checks MiniMax H3 swap prompts (both video tasks). Exit 1 = fix and rerun.
+- `scripts/face_strip.py`, `scripts/words.py`: her face every 1/4 s and her words with their times, for the mouth and word lines of the video swaps.
 - `references/`: official guides, evidence and history per task.

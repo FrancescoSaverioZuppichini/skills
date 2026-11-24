@@ -45,18 +45,19 @@ The target video is in a cinematic, literary music-video style with soft lightin
 [Shot 1] The scene opens in a crowded urban street...
 [Shot 2] At 00:09.000, the shot cuts to an extreme close-up...
 ```
-- One shot: no timestamp anywhere; moves are prose in playback order.
-- Several shots: each later shot opens with its cut time, taken from the source (`cv_tools.shots` → `shots.json` → `start`), times strictly increasing; moves inside a shot stay prose. Retention lines list every shot: `(throughout [Shot 1], [Shot 2])`.
+- One shot: no shot timestamp.
+- Several shots: each later shot opens with its cut time, taken from the source (`cv_tools.shots` → `shots.json` → `start`), times strictly increasing. Retention lines list every shot: `(throughout [Shot 1], [Shot 2])`.
+- Moves (ours, not in the official guide): one sentence every 0.5 s on the clip's clock, `(at 1.5 s) …`, through every shot. H3 takes her timing from the move list; in prose it ran 2 s ahead of the song (2026-11-23).
 - Skeleton of a two-shot description (each task file has its full two-shot template, exactly what its audit accepts):
   ```text
   <one style sentence> [Shot 1] <who does what, where: scene, framing, moves, camera> [Shot 2] At <MM:SS.mmm>, the shot cuts to <who, where: scene, framing, moves, camera> <closing lines>
   ```
-- Dialogue goes inside `<d>[Language] …</d>` with a speaker id `(S1)`. Our swap tasks never transcribe speech: they reuse the clip's sound.
+- Dialogue and sung words go inside `<d>[Language] …</d>` with a speaker id `(S1)`: `(S1) sings along, <d>[English] hit a</d>`. Swaps write only the words her lips move to, at their anchor; the sound itself is the clip's.
 
 ## Length
 - The official guide: "For generation tasks, `detailed_description` is normally 350-500 English words … Video-editing descriptions scale with the complexity of the source video and do not have to follow the generation-task range. A single shot does not automatically justify a shorter description."
 - Ours, measured on swaps: a 3 s single shot passes at 540–670 words in total. Scale with the clip: about 30–45 words of moves per second of each shot. `h3_audit.py --seconds` raises its limit the same way.
-- Long prompts made of 0.125 s timestamped beats (850 words) never passed. Moves are prose.
+- Beats every 0.125 s (850 words) never passed; one sentence every 0.5 s does (2026-11-23).
 
 ## Length of the video
 H3 renders 17n + 5 frames at 24 fps: 73 = 3 s, 124 = 5.2 s, 201 = 8.4 s, 241 = 10 s. The swap workflow renders the longest such length that fits the guide it gets. Render the whole clip, the part asked for, or one shot; never cut shorter by default.

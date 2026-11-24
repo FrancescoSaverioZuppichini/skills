@@ -2,6 +2,7 @@
 # Audit H3 swap prompts against their task file: the checklist + the fixed template text copied verbatim.
 # A prompt whose <Subject 1> says "only her face, identity and hair" is checked against tasks/video-face-swap.md, any other
 # against tasks/video-character-swap.md. One shot: no timestamp. Several: [Shot 1] bare, [Shot N] At MM:SS.mmm, increasing.
+# Moves: one "(at X s)" sentence every 0.5 s from 0.0 on the clip's clock; <d> words only with the lip-sync sentence.
 # Usage:
 #   h3_audit.py <dir of .txt prompts> [--seconds S]           audit whole prompts
 #   h3_audit.py --slots <dir> [--seconds S] [--no-sound]      build the character-swap prompt from one .txt per Clip prompt box
@@ -67,12 +68,19 @@ def fixed_text(tpl):
 
 def shots_ok(dd):
     # [Agent] Official format: [Shot 1] has no timestamp; every later shot opens with "At MM:SS.mmm," and the cut times
-    # strictly increase. Moves inside a shot stay prose, so the shot tags hold the only timestamps.
+    # strictly increase. The moves' own times are "(at X s)" anchors, so MM:SS times belong to the shot tags only.
     tags = re.findall(SHOT, dd)
     times = [int(m) * 60 + float(s) for _, m, s in tags[1:] if s]
     return (bool(tags) and [int(n) for n, _, _ in tags] == list(range(1, len(tags) + 1)) and not tags[0][2]
             and len(times) == len(tags) - 1 and all(a < b for a, b in zip([0] + times, times))
             and len(re.findall(r"\b\d{2}:\d{2}(\.\d+)?\b", dd)) == len(tags) - 1), len(tags)
+
+
+def anchors_ok(dd, seconds=None):
+    # [Agent] H3 takes her timing from the move list, so every 0.5 s of the clip gets its sentence: 0.0, 0.5, 1.0, … with no gap
+    # and no restart at a cut; with --seconds the last anchor must sit within a second of the end.
+    times = [float(x) for x in re.findall(r"\(at (\d+(?:\.\d+)?) s\)", dd)]
+    return bool(times) and times == [k / 2 for k in range(len(times))] and (seconds is None or times[-1] >= seconds - 1)
 
 
 def sound_ok(t, su, vret):
@@ -121,9 +129,12 @@ def audit(t, seconds=None, lip_sync=True):
         # [Agent] The lip-sync sentence is a choice per clip (--no-lip-sync): with it she sings along to the vocals she hears,
         # without it her mouth follows the source. Either way it is all or nothing, and never without the sound.
         "4 lip-sync line (with sound)": ("lip-syncs the vocals in the original sound of <video 1>" in tl) == (lip_sync and "audio reuse" in su),
+        # [Agent] Sung or spoken words make sense only when she lip-syncs the sound they come from.
+        "4 <d> words need the lip-sync line": "<d>" not in tl or "lip-syncs the vocals in the original sound of <video 1>" in tl,
         "6 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
         "6 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
         "7 shots + timestamps": shots_pass,
+        "7 moves anchored every 0.5 s": anchors_ok(dd, seconds),
         "9 length (--seconds for clips over 3 s)": len(t.split()) <= limit(n, seconds),
         # [Agent] The outfit sentence dresses her in the sheet's outfit: required in every shot of a character swap (nude
         # renders without it), wrong for a face-only swap, where she keeps her own clothes.

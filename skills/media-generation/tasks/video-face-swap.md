@@ -46,7 +46,7 @@
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
-6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears and `{HAIR}` her hair (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots exactly as in the character swap: one shot = no timestamps; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`.
+6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears and `{HAIR}` her hair (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots, anchors, her mouth and her words exactly as in the character swap: one shot = no shot timestamp; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`; the moves anchored `(at X s)` every 0.5 s.
 7. Audit (it picks this template from "only her face, identity and hair"), then check the moves against the strips:
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts" --seconds "$SECONDS"
