@@ -3,7 +3,7 @@
 **Goal:** what is said or sung in a clip, each word with its start and end: for the `<d>` lines of a video swap prompt, for captions, or as a plain transcript. Tool: `scripts/transcribe.py`. No ComfyUI, no prompt.
 
 ## Ask if unsure
-- Which output? `words` (default: one line per word, what the swap prompts read), `text`, `json`, `srt` (captions).
+- Which output? `words` (default: one line per word, what the swap prompts read), `text`, `json`, `srt` (captions), `ass` (one big word at a time; `video-captions.md`).
 - The language, when you know it (`--language en`).
 
 ## Run

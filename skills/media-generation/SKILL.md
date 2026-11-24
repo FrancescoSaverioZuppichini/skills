@@ -10,7 +10,8 @@ description: Use EVERY time you make an image, video or voice with the lab's Com
 |---|---|---|---|
 | A character replaces the whole person in a video (character swap, the default) | `tasks/video-swap.md` | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
 | Only the face and hair in a video (face swap, on request only) | `tasks/video-swap.md` (Pick the mode) | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
-| A swap render back in the source clip's colour grade (optional: after every video swap measure it, and ask when a channel shifts 25+ levels) | `tasks/video-color-match.md` | cv-tools `color_match` + ffmpeg | no prompt |
+| A swap render relit to the source clip's light (on a yes to the swap's light question) | `tasks/video-relight.md` | cv-tools `color_match` + ffmpeg | no prompt |
+| Captions on a swap render, plain or word by word (on request, or on a yes when the render lost the source's captions) | `tasks/video-captions.md` | `scripts/transcribe.py` + ffmpeg | no prompt |
 | A character replaces the whole person in a photo | `tasks/image-character-swap.md` | `qwen-character-swap` | `models/qwen-image-edit.md` |
 | Dress a person or a character sheet in an outfit from a picture | `tasks/image-outfit-swap.md` | `qwen-outfit-swap` | `models/qwen-image-edit.md` |
 | Remove text, logos, tattoos, jewellery or anything else from a photo | `tasks/image-remove-anything.md` | `qwen-remove-anything` | `models/qwen-image-edit.md` |
@@ -31,7 +32,7 @@ $RUN <workflow> --list      # inputs and groups, before your first run of a work
 
 `--set "Title.input=@/local/file"` uploads a local file into that loader.
 
-The video tasks also run [cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools) (shots, guides, colour match), cloned on every GPU machine. Change it on the test machine, push, pull on the others: every clone on the same commit with a clean tree before a run.
+The video tasks also run [cv-tools](https://github.com/FrancescoSaverioZuppichini/cv-tools) (shots, guides, bars, relight), cloned on every GPU machine. Change it on the test machine, push, pull on the others: every clone on the same commit with a clean tree before a run.
 
 ## Rules for every task
 1. **Ask before you guess.** Each task lists what to ask when the request doesn't say: which character sheet, which outfit, which part of the clip, sound or not.
