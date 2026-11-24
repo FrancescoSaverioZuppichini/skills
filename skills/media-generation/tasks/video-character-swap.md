@@ -55,7 +55,7 @@ mkdir -p "$OUT/prompt"
    ```
 5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask, the pose drawn on top. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
    ```bash
-   GUIDE=(--mask-prompt person --mask-grow 0.05)
+   GUIDE=(--mask-prompt person --mask-grow 0)
    python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
    : > "$OUT/guides.txt"
    while read -r k a b; do
@@ -233,7 +233,7 @@ $RUN minimax-h3-reference-to-video \
 | Her body turns where the clip doesn't; face soft | rewrite the moves from the raw frames; say "never turns" when she doesn't | strong |
 | Nude, outfit lost | outfit sentence in every shot (template) | strong |
 | Source clothes kept | the whole woman inside the guide's blur (`--mask-prompt person`) | strong |
-| Source hairstyle or accessories come back | `motion_guide --mask-grow 0.05` | medium |
+| Source hairstyle or accessories come back | `motion_guide --mask-grow 0.05` on that clip only (off by default: it pulls her hands toward her head) | medium |
 | Glowing eyes, white spot on the nose | eyebrow + mouth dots only (motion_guide default) | medium |
 | A camera move invented before a cut | multi-shot template with the cut time | medium (1 seed) |
 | Phone painted in her hand | never name the phone | strong |
@@ -241,6 +241,7 @@ $RUN minimax-h3-reference-to-video \
 | Stickers, captions disappear | none yet; accepted | open |
 
 ## Lessons (dated, evidence)
+- 2026-11-24 · Person mask grown 5 % vs not grown (`--mask-grow 0`), one clip, 3 seeds (full clip and two 5 s cuts): the same moves on every seed; not grown leaves the hair edge a touch darker at moments; the user saw her hands drift toward her head with the grow. Not grown is the default. Medium.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
 - 2026-11-14 / 11-16 · Never a ControlNet, for pose or inpainting: wrong timing, wrong hand signs. Strong; the user's hard rule.
 - 2026-11-15 · No 4-step speed LoRA (worse look); Pika runs only on its own 6 knots, never stacked with a speed LoRA. The user's rule.

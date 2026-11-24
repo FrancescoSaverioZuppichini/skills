@@ -15,7 +15,7 @@
 ## What differs from the character swap
 | | Character swap | Face only |
 |---|---|---|
-| Guide mask | the whole woman: `--mask-prompt person --mask-grow 0.05` | `--mask-prompt "head, hair" --mask-grow 0.02` |
+| Guide mask | the whole woman: `--mask-prompt person --mask-grow 0` | `--mask-prompt "head, hair" --mask-grow 0.02` |
 | Visible in `<Video 1>` | nothing of her | her body, skin, clothes and jewellery |
 | `<Subject 1>` | face, identity, hair, body shape, outfit | only her face, identity and hair |
 | `<Subject 2>` | her performance only | the woman herself: body, clothes, jewellery and performance |
