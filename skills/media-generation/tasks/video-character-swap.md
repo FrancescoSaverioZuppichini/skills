@@ -23,7 +23,8 @@ Run cv-tools where it is installed (the GPU machine); look at the strips whereve
 SRC=/abs/path/source.mp4      # the clip as the user gave it
 OUT=/abs/path/work/clip1      # an empty work folder
 CV=/abs/path/cv-tools         # cv-tools checkout (has .venv)
-SKILL=/abs/path/media-generation
+PY="$CV/.venv/bin/python"     # runs the skill's scripts (cv2, transformers)
+SKILL=/abs/path/media-generation   # the whole skill folder on this machine: the audit reads its tasks/
 NAME=clip1                    # a unique name for the files sent to ComfyUI
 mkdir -p "$OUT/prompt"
 ```
@@ -33,7 +34,7 @@ mkdir -p "$OUT/prompt"
    ```bash
    CLIP="$OUT/clip.mp4"
    ffmpeg -nostdin -y -ss <START> -i "$SRC" -t <SECONDS> -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$CLIP"
-   SECONDS=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$CLIP")
+   LEN=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$CLIP")
    ```
    The workflow renders the longest 17n+5 frames that fit at 24 fps (73 = 3 s, 124 = 5.2 s, 201 = 8.4 s, 241 = 10 s). Never cut a clip shorter to make it easier.
 2. **Shots.** `shots.json` (cuts, `MM:SS.mmm` times) and one strip per shot (every 6th frame, left to right, top row first; frame numbers in `strip_frames`):
@@ -42,7 +43,8 @@ mkdir -p "$OUT/prompt"
    ```
    - One shot: the one-shot template, no shot timestamp (the moves still carry their `(at X s)` anchors).
    - N shots: the multi-shot template. Each later shot k gets `{TIME_k}` = its `start` in `shots.json`, and its own `{SCENE_k}`, `{FRAMING_k}`, `{MOVES_k}`, `{CAMERA_k}` from its own strip, written as one later-shot block (template below).
-   - A cut the tool missed: two adjacent frames that jump to a new angle or place are a cut, whatever the score (the tool's line for it: `max_score_inside_shots`). A pan slides the same place across and is not a cut. Re-run with a lower `--cut`, or split the shot by hand at that frame.
+   - A cut the tool missed: two adjacent frames that jump to a new angle or place are a cut, whatever the score (the tool's line for it: `max_score_inside_shots`). A pan slides the same place across and is not a cut. Re-run with a lower `--cut`, or split the shot by hand at that frame. A dissolve or glitch into a new angle is a cut too: split at its middle by hand (its line in `$OUT/shots.txt`, step 5; `{TIME_k}` = that time).
+   - The half-second strip, for the anchors (tile k = `(at k/2 s)`, 8 per row = 4 s): `ffmpeg -nostdin -v error -y -i "$CLIP" -vf "fps=2,scale=320:-2,tile=8x4" -vsync 0 "$OUT/half-%02d.png"`
 3. **Close-ups of fast moves.** Wherever hands or head move between two strip frames, tile that range (A even, B - A ≤ 26):
    ```bash
    A=0; B=26
@@ -62,6 +64,7 @@ mkdir -p "$OUT/prompt"
    while read -r k a b; do
      ffmpeg -nostdin -v error -y -ss "$a" -to "$b" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-$k.mp4"
      (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$OUT/shot-$k.mp4" --output "$OUT/guide-$k" "${GUIDE[@]}")
+     "$PY" "$SKILL/scripts/face_strip.py" "$OUT/shot-$k.mp4" "$OUT/guide-$k/keypoints.npz" "$OUT/face-$k.jpg" --start "$a"
      echo "file '$OUT/guide-$k/guide.mp4'" >> "$OUT/guides.txt"
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
@@ -70,7 +73,7 @@ mkdir -p "$OUT/prompt"
 6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the person's three values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
 7. **Audit** (exit 1 = fix and rerun; add `--no-lip-sync` when the sentence is dropped), then reread every move against the strips (checks 10–12):
    ```bash
-   python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$SECONDS"
+   python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$LEN"
    ```
 8. **Render** (Run, below). Then check (Check the result).
 
@@ -112,17 +115,17 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing (details go in `{SCENE}` and `{FRAMING}`) | "<place> in <light>, <kind of framing>" |
 | `{KEPT}` | what of the scene stays, ending "as `<Video 1>`" | "the same <place>, light and camera path as <Video 1>" |
-| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Her outstretched arm toward the lens = selfie (then end with "her other hand is empty" instead of "she holds nothing"); the background never moves = standing still; a small drift = another person. A picture turned sideways: add "with the picture turned a quarter turn sideways". | |
+| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Her outstretched arm toward the lens = selfie (then end with "her other hand is empty", or "her hands stay out of view" when neither shows, instead of "she holds nothing"); the background never moves = standing still; a small drift = another person. A picture turned sideways: add "with the picture turned a quarter turn sideways". | |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things, in the order they appear; the swing itself goes in `{CAMERA}`). Leave out other people and small details: they stay because the scene is kept | "<place> with <object>, <object> and <object>" |
 | `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view**, named as body parts (her top, waist, hips, legs); the outfit text decides what covers them | "She is framed <how close, from which angle>, from <where> to <where>; the view shows <body parts in view>." |
-| `{MOVES}` | First the facing sentence, then **one sentence every 0.5 s, each opening with its time on the clip's clock**: `(at 0.0 s)`, `(at 0.5 s)`, … to the end of the shot, from every 2nd strip frame. The clock never restarts at a cut: shot 2 cut at 7.9 s opens `(at 8.0 s)`. At most two gestures per sentence (expressions and the wind don't count), each with its verb ("covers her mouth and laughs"); nothing new = say what she holds ("keeps the finger raised"). **Say which way her body faces and write a turn only if the frames show one.** A turn = you see her side or her back; while her chest faces the camera it's a sway ("her hips sway", "her weight shifts", never "her body angles"). If she never turns, say so. Can't tell a direction: leave it out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns. (at 0.0 s) One hand covers her mouth, her eyes on the lens. (at 0.5 s) The hand slides down to her chin." |
+| `{MOVES}` | First the facing sentence, then **one sentence every 0.5 s, each opening with its time on the clip's clock**: `(at 0.0 s)`, `(at 0.5 s)`, …, from the half-second strip (step 2), 12–22 words each. An anchor covers its half second (`(at 4.0 s)` = 4.0–4.5 s); the last one is the last half second the render covers (its 17n+5 length, step 1). The clock never restarts at a cut: shot 2 cut at 7.9 s opens `(at 8.0 s)`. At most two gestures per sentence (expressions and the wind don't count), each with its verb ("covers her mouth and laughs"); nothing new = say what she holds ("keeps the finger raised"). **Say which way her body faces and write a turn only if the frames show one.** A turn = you see her side or her back; while her chest faces the camera it's a sway ("her hips sway", "her weight shifts", never "her body angles"). If she never turns, say so. Can't tell a direction: leave it out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns. (at 0.0 s) One hand covers her mouth, her eyes on the lens. (at 0.5 s) The hand slides down to her chin." |
 | `{CAMERA}` | one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, following, a swing or a tilt, as the strip shows; a camera move only if the background moves. The background sliding to the picture left = the camera swings to the picture right | "The camera stays still, matching…" |
 | `{LIGHT}` | "the same <light> as the <scene>" | "the same <light> as the <place>" |
 | `{SOUND}` | the kinds of sound, in order; her own words go in `{MOVES}`, not here; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
-- **Her mouth:** only from the face strip of the raw clip (`python3 "$SKILL/scripts/face_strip.py" "$CLIP" "$OUT/guide-1/keypoints.npz" "$OUT/face-strip.jpg"`, her face every 1/4 s), never from the frame strips. Every mouth shape goes in the anchor where it starts. **An odd shape (pout, kiss, lip bite, tongue out, mouth wide open) is written twice: where it starts and where it ends** ("(at 9.5 s) … her lips pushed into a small, sudden pout. (at 10.5 s) Her lips relax and close …"). A shape with no end is held to the end of the clip. The last anchor says the mouth she ends with.
-- **Her words:** only when her lips move to them in the face strip. Each word or short phrase from `words.txt` goes in the anchor where it starts, as heard, in its language (a word stretched back to 0.00 s, or a misheard word, is fixed from the face strip and your ears): `(at 2.5 s) <Subject 1> (S1) sings along, <d>[English] Crashing</d>, her eyes closed`; later ones `(S1) sings along, <d>[English] hit a</d>`. Speech: `(S1) says, <d>[English] …</d>` (open: not render-tested).
+- **Her mouth:** only from the face strips of the raw clip (`$OUT/face-<k>.jpg`, step 5: her face every 1/4 s, labelled on the clip's clock), never from the frame strips. Every mouth shape goes in the anchor where it starts. **An odd shape (pout, kiss, lip bite, tongue out, mouth wide open) is written twice: where it starts and where it ends** ("(at 9.5 s) … her lips pushed into a small, sudden pout. (at 10.5 s) Her lips relax and close …"). A shape with no end is held to the end of the clip. The last anchor says the mouth she ends with.
+- **Her words:** only when her lips move to them in the face strip. Each word or short phrase from `words.txt` goes in the anchor where it starts, as heard, in its language; words in the same anchor share one `<d>`. The face strip wins over `words.txt`: a word stretched back to 0.00 s, a misheard word, or words on a song with no voice (Whisper invents them: "Thank you so much…") are moved, fixed or dropped from it: `(at 2.5 s) <Subject 1> (S1) sings along, <d>[English] Crashing</d>, her eyes closed`; later ones `(S1) sings along, <d>[English] hit a</d>`. Speech: `(S1) says, <d>[English] …</d>` (open: not render-tested).
 - **Lip-sync sentence:** with her words (she sings or speaks in the source, or the user asks for her singing); otherwise drop it and audit with `--no-lip-sync`.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces, never what covers the eyes. **Objects she holds** stay: name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one ("filmed from a phone standing still" is fine: that phone is the camera).
@@ -242,6 +245,7 @@ $RUN minimax-h3-reference-to-video \
 | Phone painted in her hand | never name the phone | strong |
 | Small or far face soft | REFINE on; check the moves are true first | medium |
 | Stickers, captions disappear | none yet; accepted | open |
+| Black bars around a shot | kept on the approved final, never named; cropping them away is under test | open |
 
 ## Lessons (dated, evidence)
 - 2026-11-24 · On a clip where she doesn't sing, the lip-sync sentence made her sing on one render and not on another: the mouth lines decide. Medium (1 clip).

@@ -1,6 +1,6 @@
 """Face strip: her face cropped from the raw clip every 1/4 s, time-stamped, to write the mouth lines from.
 
-Usage: face_strip.py <clip.mp4> <guide>/keypoints.npz <out.jpg> [--every 0.25]
+Usage: face_strip.py <clip.mp4> <guide>/keypoints.npz <out.jpg> [--every 0.25] [--start <shot start, s>]
 The crop box follows her face landmarks in the guide's keypoints.npz (cv_tools.motion_guide writes it).
 """
 import argparse
@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 FACE = ("eye", "nose", "lip", "mouth", "chin", "jaw")
-TILE, COLUMNS = 180, 11
+TILE, COLUMNS = 240, 11
 
 
 def face_box(points, frame_shape):
@@ -37,21 +37,22 @@ def main():
     p.add_argument("keypoints")
     p.add_argument("out")
     p.add_argument("--every", type=float, default=0.25, help="Seconds between crops (default 0.25)")
+    p.add_argument("--start", type=float, default=0.0, help="The shot's start in the whole clip: labels read on the clip's clock")
     args = p.parse_args()
 
     k = np.load(args.keypoints)
     face = [i for i, n in enumerate(k["names"]) if any(w in str(n) for w in FACE)]
     cap = cv2.VideoCapture(args.clip)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    step = max(1, round(fps * args.every))
     tiles, index = [], 0
     while True:
         ok, frame = cap.read()
         if not ok:
             break
-        if index % step == 0 and index < len(k["points"]):
+        # [Agent] Pick by time, not by a frame step: at 30 fps a step of 8 frames drifts to 0.267 s and misses the 0.5 s anchors.
+        if index < len(k["points"]) and index / fps >= len(tiles) * args.every - 0.5 / fps:
             pts = k["points"][index, face][k["scores"][index, face] > 0.3]
-            tiles.append(crop(frame, *face_box(pts, frame.shape), f"{index / fps:.2f}"))
+            tiles.append(crop(frame, *face_box(pts, frame.shape), f"{args.start + index / fps:.2f}"))
         index += 1
     blank = np.zeros_like(tiles[0])
     rows = [np.hstack(tiles[r:r + COLUMNS] + [blank] * (COLUMNS - len(tiles[r:r + COLUMNS]))) for r in range(0, len(tiles), COLUMNS)]

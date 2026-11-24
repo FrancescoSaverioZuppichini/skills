@@ -26,7 +26,7 @@
 
 ## Rules for this task
 - **Hide only her face and hair.** The model keeps what it can see, so her clothes stay.
-- **Name exactly what she wears** in `{CLOTHES}`: every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery. Example: `a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings`. The source-wear ban does not apply to this slot; the audit exempts it. Unnamed, H3 can redress her (2026-11-23, below).
+- **Name exactly what she wears** in `{CLOTHES}`: every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery and what else she wears (earphones and their cable). Example: `a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings`. The source-wear ban does not apply to this slot; the audit exempts it. Unnamed, H3 can redress her (2026-11-23, below).
 - **Her lips:** the lip-sync sentence (once, in shot 1) follows the character swap's rule; the no-sound variant always drops it.
 - **Her hair is the character's, in every shot:** `{HAIR}` repeats the hair part of her line (The person, below). Never the source's hair.
 - **No outfit sentence**: it would dress her in the sheet's outfit.
@@ -42,6 +42,7 @@
    while read -r k a b; do
      ffmpeg -nostdin -v error -y -ss "$a" -to "$b" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-$k.mp4"
      (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$OUT/shot-$k.mp4" --output "$OUT/guide-$k" "${GUIDE[@]}")
+     "$PY" "$SKILL/scripts/face_strip.py" "$OUT/shot-$k.mp4" "$OUT/guide-$k/keypoints.npz" "$OUT/face-$k.jpg" --start "$a"
      echo "file '$OUT/guide-$k/guide.mp4'" >> "$OUT/guides.txt"
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
@@ -49,7 +50,7 @@
 6. Write the whole prompt from the template below into `$OUT/prompts/face.txt`, slots per "Writing the slots" in `video-character-swap.md`, with these changes: `{FACE_LINE}` is her line (The person, below); `{CLOTHES}` is what she wears and `{HAIR}` her hair (Rules above); there is no `{OUTFIT}`, `{CHARACTER_LINE}` or `{OUTFIT_LOCK}`; `{FRAMING}` may say which part of her body shows ("so her chest and shoulders show"), never what she wears. Shots, anchors, her mouth and her words exactly as in the character swap: one shot = no shot timestamp; N shots = one later-shot block each, `{TIME_k}` = shot k's `start` in `shots.json`; the moves anchored `(at X s)` every 0.5 s.
 7. Audit (it picks this template from "only her face, identity and hair"), then check the moves against the strips:
    ```bash
-   python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts" --seconds "$SECONDS"
+   python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompts" --seconds "$LEN"
    ```
 
 ## The person
