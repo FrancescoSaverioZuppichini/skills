@@ -12,7 +12,7 @@ PY=/abs/path/cv-tools/.venv/bin/python     # any python with transformers + torc
 "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" --language en > "$OUT/words.txt"              # start end word
 "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" --language en --format srt > "$OUT/captions.srt"
 ```
-- `--device auto` (default): the GPU in bf16 when 6 GB are free, else the CPU (the same words, slower).
+- `--device auto` (default): the GPU in bf16 when 6 GB are free, else the CPU: the same words, but 10–30× slower. When ComfyUI holds the GPU and is idle (empty queue), free its memory first instead of falling back: `curl -s -X POST <server>/free -d '{"unload_models":true,"free_memory":true}'`. Never during a render.
 - Time for a 15 s clip: 1.8 s on a 3090 in bf16 (plus ~5 s to load), 17–60 s on a CPU (2026-11-24).
 
 ## Check

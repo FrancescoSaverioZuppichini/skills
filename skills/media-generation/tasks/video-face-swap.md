@@ -13,6 +13,8 @@
 - Which seed(s)? Show the inputs before the render?
 
 ## What differs from the character swap
+The character swap's defaults and scenarios hold, with these differences (the guide default here has no `--color`: never rendered face-only).
+
 | | Character swap | Face only |
 |---|---|---|
 | Guide mask | the whole woman: `--mask-prompt person --mask-grow 0` | `--mask-prompt "head, hair" --mask-grow 0.02` |

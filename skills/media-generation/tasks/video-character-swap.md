@@ -17,6 +17,34 @@
 
 **Spark-H3 stays on** (group 8, on by default): sparse attention on the main pass, ~20 % faster, the same video. Turn it off only for an exact dense render.
 
+## Defaults, and when to change them
+Every run starts from these. Change one only for its scenario below, and say which and why when you show the inputs.
+
+| Setting | Default |
+|---|---|
+| Part | the whole clip, one run (the multi-shot prompt when it has cuts) |
+| Clip prep | as given; turned upright if sideways, bars cropped (scenarios) |
+| Guide | `--mask-prompt person --mask-grow 0 --color`, one track per shot |
+| Prompt | the template; moves anchored every 0.5 s; mouth from the face strips; no words, no lip-sync sentence |
+| Sheet | the dressed sheet the workflow loads |
+| Render | ~1 MP, seed 1001, sound kept, Spark on, REFINE and DE-ROPE off |
+
+| Scenario | Change | Where |
+|---|---|---|
+| Her head lies sideways most of the clip | turn the clip upright, every step on it, the render turned back | step 1 |
+| Black bars around a shot | crop them (tell the user; keep only if asked) | step 2 |
+| A dissolve or glitch into a new angle | it is a cut: split there | step 2 |
+| A fade to black at the end | end the last shot before the black frames | step 5 |
+| She sings or speaks in the source (her lips move to the words) | transcribe; her words in `<d>` lines; the lip-sync sentence | step 4, Writing the slots |
+| The user asks for her singing on a clip where she doesn't | the same, and her mouth lines say she sings | Writing the slots |
+| No audio track, or told to drop the sound | the no-sound variant | Template |
+| A new outfit | dress the sheet first | step 0 |
+| The one run fails (out of memory) | each shot in its own window, joined | Run |
+| The source's hairstyle or accessories come back | `--mask-grow 0.05` on that clip | Check the result |
+| The user finds her face soft or small | suggest REFINE | Run |
+| The user complains about the motion (smear, wobble, wrong head turn) | suggest DE-ROPE | above |
+| The render's colour is 25+ levels off the source | ask about the colour match | `video-color-match.md` |
+
 ## Steps
 Run cv-tools where it is installed (the GPU machine); look at the strips wherever you are. Over ssh, `ssh <host> 'bash -s' <<'EOF'` … `EOF` keeps the variables remote.
 
