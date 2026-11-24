@@ -9,7 +9,6 @@
 - Which character sheet? Default: the dressed sheet the workflow loads.
 - A new outfit? An outfit picture means dressing the sheet first (step 0).
 - Keep the clip's sound? Default yes. A clip without an audio track needs the no-sound variant: what should it sound like?
-- She doesn't speak or sing in the clip: should she sing along to the music, or keep her mouth like the source? (Her mouth, below.)
 - Which seed(s)?
 - Do you want to see the inputs (guide, sheet, prompt) before the render?
 
@@ -122,7 +121,7 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
 - **Her mouth:** only from the face strip of the raw clip (`python3 "$SKILL/scripts/face_strip.py" "$CLIP" "$OUT/guide-1/keypoints.npz" "$OUT/face-strip.jpg"`, her face every 1/4 s), never from the frame strips. Every mouth beat in order, with what the lips and jaw do and how long a held look lasts, then what follows ("a small, sudden pout for about one second, then her lips relax and close"); end on the mouth she ends with. Never write her words or `<d>` lines.
-- **Sing or not** (the lip-sync sentence is a choice): she speaks or sings in the source → keep the sentence, mouth lines from the face strip; she doesn't and should sing along → keep the sentence and write it in the mouth lines ("she sings along to the song, her lips moving with the words"); she doesn't and stays like the source → drop the sentence, mouth lines from the face strip, audit with `--no-lip-sync`. The sentence alone doesn't make her sing.
+- **Lip-sync sentence:** only when she speaks or sings in the source, or when the user asks for her singing (then write it in her mouth lines too); otherwise drop it and audit with `--no-lip-sync`.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces, never what covers the eyes. **Objects she holds** stay: name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one ("filmed from a phone standing still" is fine: that phone is the camera).
 - **Her head leaves the frame:** keep the fixed face line anyway and write the move ("the camera drops to her waist").
@@ -243,7 +242,7 @@ $RUN minimax-h3-reference-to-video \
 | Stickers, captions disappear | none yet; accepted | open |
 
 ## Lessons (dated, evidence)
-- 2026-11-24 · The lip-sync sentence on a clip where she doesn't sing: with the source's closed lips written she didn't sing; with a held pout written, at 0.5 MP, she sang. The sentence allows singing, the mouth lines decide it, so singing is a choice written in the mouth lines. Medium (1 clip, examples on the review page).
+- 2026-11-24 · On a clip where she doesn't sing, the lip-sync sentence made her sing on one render and not on another: the mouth lines decide. Medium (1 clip).
 - 2026-11-24 · A pout that lasts one second, written as "pushes her lips into a pout" with no end, became a kiss-pout held for the whole 11 s clip (face swap, night car). Mouth lines come from the 1/4 s face strip, each held look with its length. Strong (the owner's rule).
 - 2026-11-24 · Person mask grown 5 % vs not grown (`--mask-grow 0`), one clip, 3 seeds (full clip and two 5 s cuts): the same moves on every seed; not grown leaves the hair edge a touch darker at moments; the user saw her hands drift toward her head with the grow. Not grown is the default. Medium.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
