@@ -6,6 +6,7 @@
 
 ## Before you start: ask if unsure
 - Which clip, and which part: the whole clip (default), a time range, or one shot?
+- Black bars around the picture (a shot letterboxed or pillarboxed inside the frame): cropped away by default (step 2). Say so before the render; keep them only if the user asks.
 - Which character sheet? Default: the dressed sheet the workflow loads.
 - A new outfit? An outfit picture means dressing the sheet first (step 0).
 - Keep the clip's sound? Default yes. A clip without an audio track needs the no-sound variant: what should it sound like?
@@ -37,6 +38,11 @@ mkdir -p "$OUT/prompt"
    LEN=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$CLIP")
    ```
    The workflow renders the longest 17n+5 frames that fit at 24 fps (73 = 3 s, 124 = 5.2 s, 201 = 8.4 s, 241 = 10 s). Never cut a clip shorter to make it easier.
+
+   **Her head lying sideways** (eyes one above the other, the phone turned) for most of the clip: H3 draws an upright portrait instead of following her (2026-11-23). Turn the clip upright, do every later step on the upright clip, and turn the render back at the end. The top of her head at the picture left: `transpose=1` (back: `transpose=2`); at the picture right: `transpose=2` (back: `transpose=1`).
+   ```bash
+   ffmpeg -nostdin -y -i "$CLIP" -vf transpose=1 -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a copy "$OUT/upright.mp4"; CLIP="$OUT/upright.mp4"
+   ```
 2. **Shots.** `shots.json` (cuts, `MM:SS.mmm` times) and one strip per shot (every 6th frame, left to right, top row first; frame numbers in `strip_frames`):
    ```bash
    (cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$CLIP" --output "$OUT/shots")
@@ -44,6 +50,11 @@ mkdir -p "$OUT/prompt"
    - One shot: the one-shot template, no shot timestamp (the moves still carry their `(at X s)` anchors).
    - N shots: the multi-shot template. Each later shot k gets `{TIME_k}` = its `start` in `shots.json`, and its own `{SCENE_k}`, `{FRAMING_k}`, `{MOVES_k}`, `{CAMERA_k}` from its own strip, written as one later-shot block (template below).
    - A cut the tool missed: two adjacent frames that jump to a new angle or place are a cut, whatever the score (the tool's line for it: `max_score_inside_shots`). A pan slides the same place across and is not a cut. Re-run with a lower `--cut`, or split the shot by hand at that frame. A dissolve or glitch into a new angle is a cut too: split at its middle by hand (its line in `$OUT/shots.txt`, step 5; `{TIME_k}` = that time).
+   - **Black bars** in a shot (default: cropped away): find the picture inside the bars, cut that shot to the largest box of the frame's shape inside it with her head in it, scale it back to the frame size, join the shots back into one clip with the sound, and run this step again on it. Example, a 404×720 picture inside a 960×720 frame from 7.9 s:
+     ```bash
+     ffmpeg -nostdin -ss 9 -t 2 -i "$CLIP" -vf cropdetect -f null - 2>&1 | grep -o 'crop=[0-9:]*' | tail -1   # crop=404:720:278:0
+     ffmpeg -nostdin -v error -y -ss 7.9 -i "$CLIP" -vf "crop=404:303:278:150,scale=960:720:flags=lanczos,setsar=1" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-2-crop.mp4"
+     ```
    - The half-second strip, for the anchors (tile k = `(at k/2 s)`, 8 per row = 4 s): `ffmpeg -nostdin -v error -y -i "$CLIP" -vf "fps=2,scale=320:-2,tile=8x4" -vsync 0 "$OUT/half-%02d.png"`
 3. **Close-ups of fast moves.** Wherever hands or head move between two strip frames, tile that range (A even, B - A ≤ 26):
    ```bash
@@ -54,7 +65,7 @@ mkdir -p "$OUT/prompt"
    ```bash
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
-   [ -n "$AUDIO" ] && "$CV/.venv/bin/python" "$SKILL/scripts/words.py" "$CLIP" > "$OUT/words.txt"   # start end word
+   [ -n "$AUDIO" ] && "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" > "$OUT/words.txt"   # start end word (speech-transcribe.md)
    ```
 5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask and tinted by part (`--color`: face green, hair red, body blue), the pose drawn on top; the prompt never names the tints. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
    ```bash
@@ -109,13 +120,13 @@ Another person or outfit: change only those two inputs, her values written the s
 ## Writing the slots
 Write only what the raw frames show: never from the blurred guide, never from another clip, never what you hope the render does. Her look comes only from the sheet: never name the source person's clothes, accessories, hairstyle, hair colour or skin ("her hair" as something that moves is fine; never a hairstyle). Never name anything drawn, hidden or overlaid on the input, not even to exclude it. Fixed text is copied word for word; only `{SLOTS}` change. Keep the clip's sound unless told otherwise.
 
-Directions are **picture directions**, as the video plays: top, bottom, left, right of the frame, even when the picture is turned sideways.
+Directions are **picture directions**, as the video plays: top, bottom, left, right of the frame (upright, step 1).
 
 | Slot | Write | Example |
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing (details go in `{SCENE}` and `{FRAMING}`) | "<place> in <light>, <kind of framing>" |
 | `{KEPT}` | what of the scene stays, ending "as `<Video 1>`" | "the same <place>, light and camera path as <Video 1>" |
-| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Her outstretched arm toward the lens = selfie (then end with "her other hand is empty", or "her hands stay out of view" when neither shows, instead of "she holds nothing"); the background never moves = standing still; a small drift = another person. A picture turned sideways: add "with the picture turned a quarter turn sideways". | |
+| `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Her outstretched arm toward the lens = selfie (then end with "her other hand is empty", or "her hands stay out of view" when neither shows, instead of "she holds nothing"); the background never moves = standing still; a small drift = another person. | |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things, in the order they appear; the swing itself goes in `{CAMERA}`). Leave out other people and small details: they stay because the scene is kept | "<place> with <object>, <object> and <object>" |
 | `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view**, named as body parts (her top, waist, hips, legs); the outfit text decides what covers them | "She is framed <how close, from which angle>, from <where> to <where>; the view shows <body parts in view>." |
 | `{MOVES}` | First the facing sentence, then **one sentence every 0.5 s, each opening with its time on the clip's clock**: `(at 0.0 s)`, `(at 0.5 s)`, …, from the half-second strip (step 2), 12–22 words each. An anchor covers its half second (`(at 4.0 s)` = 4.0–4.5 s); the last one is the last half second the render covers (its 17n+5 length, step 1). The clock never restarts at a cut: shot 2 cut at 7.9 s opens `(at 8.0 s)`. At most two gestures per sentence (expressions and the wind don't count), each with its verb ("covers her mouth and laughs"); nothing new = say what she holds ("keeps the finger raised"). **Say which way her body faces and write a turn only if the frames show one.** A turn = you see her side or her back; while her chest faces the camera it's a sway ("her hips sway", "her weight shifts", never "her body angles"). If she never turns, say so. Can't tell a direction: leave it out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns. (at 0.0 s) One hand covers her mouth, her eyes on the lens. (at 0.5 s) The hand slides down to her chin." |
@@ -226,6 +237,31 @@ $RUN minimax-h3-reference-to-video \
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound.
 - Time (3090, models loaded): 3 s one pass 1.7 min with Spark, 2.1 min without (2026-11-23); REFINE on 3.8 min full frame, 2.6–2.9 min masked (2026-11-22). Time grows with length: a full 10 s clip took 12 min in one pass (2026-11-13, older graph). REFINE on a long clip may run out of memory (141 frames did). DE-ROPE: not timed in this graph.
 - REFINE (R450-2): the toggle alone drops the main pass to a 0.50 MP draft, the learned upscaler doubles it to 2.1 MP, then 2 Pika steps from noise 0.45. No size to set by hand. `Masked refine on / off` (default on) redraws only her plus a margin.
+
+**Several shots: one run by default**, the multi-shot prompt over the whole clip. Only when that run fails (out of memory) or the user asks, render each shot of `$OUT/shots.txt` (step 5) on its own and join them. Each shot gets the shortest 17n+5-frame window that covers it, so nothing is lost to H3's length rule; the window runs a few frames into the next shot (cut away after), and the last one reaches back instead of past the end. Each window is a one-shot clip: its own guide, its own one-shot prompt with anchors from `(at 0.0 s)` (audit with `--seconds` = its length), the same seed and sheet.
+```bash
+python3 - "$OUT/shots.txt" "$LEN" > "$OUT/windows.txt" <<'PY'
+import math, sys
+end = float(sys.argv[2])
+for line in open(sys.argv[1]):
+    k, a, b = line.split(); a, b = float(a), float(b)
+    seconds = (17 * math.ceil((round((b - a) * 24) - 5) / 17) + 5) / 24
+    start = min(a, end - seconds)
+    print(k, f"{start:.3f}", f"{seconds:.3f}", f"{a - start:.3f}", f"{b - a:.3f}")   # shot, window start, window length, shot offset, shot length
+PY
+: > "$OUT/parts.txt"
+while read -r k s w off len; do
+  ffmpeg -nostdin -v error -y -ss "$s" -t "$w" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/win-$k.mp4"
+  (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$OUT/win-$k.mp4" --output "$OUT/wguide-$k" "${GUIDE[@]}")
+  # write and audit $OUT/prompt-$k/prompt.txt from win-$k.mp4, then:
+  R=$($RUN minimax-h3-reference-to-video --set "Video 1 · guide.video=@$OUT/wguide-$k/guide.mp4" \
+      --set "Swap prompt.value=$(cat "$OUT/prompt-$k/prompt.txt")" --set "Seed.noise_seed=1001" 2>&1 | grep -E 'mp4$' | tail -1)
+  ffmpeg -nostdin -v error -y -ss "$off" -t "$len" -i "$R" -an -c:v libx264 -crf 12 -pix_fmt yuv420p "$OUT/part-$k.mp4"
+  echo "file '$OUT/part-$k.mp4'" >> "$OUT/parts.txt"
+done < "$OUT/windows.txt"
+ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/parts.txt" -i "$CLIP" -map 0:v -map 1:a -c:v copy -c:a aac -shortest "$OUT/$NAME-joined.mp4"
+```
+A colour match (`video-color-match.md`) goes on each part before the join, from its own guide's masks.
 
 ## Check the result
 1. `/history` of the run: the LoadImage input is the sheet you meant.

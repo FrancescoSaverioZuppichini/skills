@@ -20,6 +20,7 @@ description: Use EVERY time you make an image, video or voice with the lab's Com
 | Upscale an image ×2 or ×4 | `tasks/image-upscale.md` | `seedvr2-upsample` | no prompt |
 | Censor nudity in an image | `tasks/image-censor.md` | `nudenet-censor` | no prompt |
 | Speech from text in a cloned voice | `tasks/speech-text-to-speech.md` | `qwen3-text-to-speech` | `models/qwen3-tts.md` |
+| What is said or sung in a clip, with word times (swap `<d>` lines, captions) | `tasks/speech-transcribe.md` | `scripts/transcribe.py` (Whisper) | no prompt |
 
 Workflows live in ComfyUI's Workflows menu. Make, edit or run them with the `comfyui-workflow` skill. Every task's run command uses its runner:
 
@@ -45,5 +46,5 @@ The video tasks also run [cv-tools](https://github.com/FrancescoSaverioZuppichin
 - `models/<model>.md`: how to prompt the model, from its official guide plus what we measured.
 - `tasks/<task>.md`: the recipe: goal, ask-if-unsure, inputs, what you write, run, check, lessons.
 - `scripts/h3_audit.py <dir>`: checks MiniMax H3 swap prompts (both video tasks). Exit 1 = fix and rerun.
-- `scripts/face_strip.py`, `scripts/words.py`: her face every 1/4 s and her words with their times, for the mouth and word lines of the video swaps.
+- `scripts/face_strip.py`: her face every 1/4 s, for the mouth lines of the video swaps. `scripts/transcribe.py`: words with their times (`tasks/speech-transcribe.md`).
 - `references/`: official guides, evidence and history per task.
