@@ -1,6 +1,6 @@
 # Character swap on H3: settings, inputs, evidence and history
 
-The writer's file is `tasks/character-swap.md`. This file holds what the writer doesn't need while writing: the render setup, where each rule came from, the shot-format survey, and what failed. Run ids (`18f`, `W2`, `iteration 3`, …) are the lab's render logs; they are named here so a claim can be traced, never needed to write a prompt.
+The writer's file is `tasks/video-swap.md`. This file holds what the writer doesn't need while writing: the render setup, where each rule came from, the shot-format survey, and what failed. Run ids (`18f`, `W2`, `iteration 3`, …) are the lab's render logs; they are named here so a claim can be traced, never needed to write a prompt.
 
 ## Render setup
 - **Model:** Singularity v1.3 int8 (`Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors`) → `MiniMaxChunkFeedForward` → Pika LoRA `pika_h3_flex_ref2va_v1_bf16.safetensors` → sigma shift 12 / 3; sampler `lcm` on Pika's schedule `1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0` (6 steps), CFG 1; 736×1312 (1 MP).
@@ -28,7 +28,7 @@ The writer's file is `tasks/character-swap.md`. This file holds what the writer 
 | Multi-shot tags | one 2-shot test clip, 1 seed (2026-11-22): the guide sets the cut (prose cut at frame 36, tagged at 35; real 36); the tagged prompt held shot 1's framing to the cut, the prose prompt invented a camera swing over frames 30–35 |
 
 ## Shot format: official and community (2026-11-22)
-- **Official** (MiniMax guide §5.1, `references/h3-official-ref-guide.md`): "`[Shot 1]` marks the opening shot and has no timestamp. Later shots use `[Shot N] At MM:SS.mmm, ...` to mark cut times." Examples: `[Shot 2] At 00:09.000, the shot cuts to an extreme close-up...`; `[Shot 2] At 00:02.800, the camera cuts to a medium close-up of the captain from Shot 1 in profile facing right`.
+- **Official** (MiniMax guide §5.1, [official guide](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md)): "`[Shot 1]` marks the opening shot and has no timestamp. Later shots use `[Shot N] At MM:SS.mmm, ...` to mark cut times." Examples: `[Shot 2] At 00:09.000, the shot cuts to an extreme close-up...`; `[Shot 2] At 00:02.800, the camera cuts to a medium close-up of the captain from Shot 1 in profile facing right`.
 - **Community:** nobody timestamps a single shot. Multi-shot use varies: [HF discussion 47](https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/47) (`[Shot 2] At 00:03, the camera cuts to…`), [HF discussion 71](https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/71) (shot blocks without times), [ComfyUI Fantastic H3 Prompt Builder](https://github.com/Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder) (inserts `[Shot N] At MM:SS.mmm,`, warns on a timed `[Shot 1]`), [awesome-minimax-h3-prompts](https://github.com/ecomimagelab/awesome-minimax-h3-prompts) (`CUT TO:`), [ComfyUI's H3 prompt guide](https://docs.comfy.org/tutorials/video/minimax/minimax-h3-prompt-guide) (one timestamp per cut, never a range).
 
 ## What failed (don't retry without a new reason)

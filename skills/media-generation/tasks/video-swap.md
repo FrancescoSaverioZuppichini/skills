@@ -23,7 +23,7 @@ Start from the defaults. Change one only for its scenario, and when you show the
 | Guide | the mode's flags, one track per shot |
 | Prompt | the mode's template; one move sentence every half second; mouth from the face strips; no words, no lip-sync sentence |
 | Sheet | the dressed sheet the workflow loads |
-| Render | ~1 MP, seed 1001, clip sound on, Spark on, REFINE off, DE-ROPE off |
+| Render | ~1 MP, seed 1001, clip sound on, Spark on, REFINE off, DE-ROPE off (never ask about these two) |
 
 | Scenario | Change |
 |---|---|
@@ -73,12 +73,13 @@ mkdir -p "$OUT/prompt"
    (cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$CLIP" --output "$OUT/shots")
    ffmpeg -nostdin -v error -y -i "$CLIP" -vf "fps=2,scale=480:-2,tile=4x2" -vsync 0 "$OUT/half-%02d.png"   # tile k = (at k/2 s), left to right, top row first
    ```
-   A jump or a dissolve to a new angle or place is a cut, even when `shots.json` misses it: split it by hand in `$OUT/shots.txt` (step 4). A pan is not a cut.
+   - `$OUT/shots/` also has one strip per shot (every 6th frame). Dark clip: add `eq=gamma=1.8,` before `scale` in every strip command.
+   - A jump to a new angle or place is a cut, even when `shots.json` misses it; a dissolve is a cut at its middle. Split it by hand in `$OUT/shots.txt` (step 4) and use that time as its `{TIME_k}`. A pan is not a cut.
 3. **Sound and words.**
    ```bash
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"   # stacked bands = a voice, a regular beat = music
-   [ -n "$AUDIO" ] && "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" --language <code> > "$OUT/words.txt"   # start end word
+   [ -n "$AUDIO" ] && "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" > "$OUT/words.txt"   # start end word; add --language <code> when you know it
    ```
    No audio: the no-sound variant.
 4. **Guide and face strips, one per shot.** Free ComfyUI's GPU memory first (`curl -s -X POST <server>/free -d '{"unload_models":true,"free_memory":true}'`).
@@ -94,14 +95,16 @@ mkdir -p "$OUT/prompt"
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
-   Look at the joined guide: she is blurred in every frame. A fade to black at the end stops the last shot ("SAM lost the person"): end that shot before the black frames in `$OUT/shots.txt` and rerun.
+   Look at the joined guide: she is blurred in every frame. A fade to black at the end (inside the render) stops the last shot ("SAM lost the person"): end that shot before the black frames in `$OUT/shots.txt` and rerun.
 5. **Close-ups where she moves fast** (hands, head, mouth), one second at 8 fps, and a denser face strip:
    ```bash
    ffmpeg -nostdin -v error -y -ss <t> -t 1 -i "$CLIP" -vf "fps=8,scale=480:-2,tile=4x2" -frames:v 1 "$OUT/fast-<t>.png"
    "$PY" "$SKILL/scripts/face_strip.py" "$OUT/shot-<k>.mp4" "$OUT/guide-<k>/keypoints.npz" "$OUT/face-<k>-dense.jpg" --start <shot start> --every 0.1
    ```
-6. **Write the prompt** into `$OUT/prompt/prompt.txt`: the mode's template word for word, her values (The person), every other `{SLOT}` from the clip's own frames (Writing the prompt).
-7. **Audit.** Exit 1 = fix and rerun. It names any banned word and any changed fixed text, and prints the render's length and its last anchor. Add `--no-lip-sync` when the prompt has no lip-sync sentence. Then reread every move against the strips.
+6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the mode's template block (the text between its ``` lines) and replace every `{SLOT}`: her values (The person), the rest from the clip's own frames (Writing the prompt).
+   - One shot: the one-shot block. Several shots: the two-shot block, plus one later-shot block per extra shot (the template's "Several shots" lines).
+   - No words (Her words): delete the whole sentence "She lip-syncs the vocals in the original sound of <Video 1>, whether she speaks or sings; the soundtrack itself is unchanged." 
+7. **Audit.** Exit 1 = fix and rerun. It picks the mode from the `<Subject 1>` line, names any banned word and any changed fixed text, and prints the render's length and its last anchor. Add `--no-lip-sync` when the prompt has no lip-sync sentence. Then reread every move against the strips.
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$LEN"
    ```
@@ -124,36 +127,41 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 ## Writing the prompt
 - Only what the clip's frames show (the upright clip if you turned it): never the guide, never another clip, never what you hope the render does.
 - Directions are picture directions, as the video plays: top, bottom, left, right of the frame.
-- Never name anything drawn, hidden or overlaid on the input (the guide, its colours, captions, stickers), not even to exclude it.
+- Never name anything drawn, hidden or overlaid on the input (the guide, its colours, captions, stickers, black bars), not even to exclude it.
 - Her look comes from the sheet: never the source's hairstyle, hair colour or skin ("her hair swings" is fine). Character swap: never the source's clothes or jewellery. Face swap: those go in `{CLOTHES}` and nowhere else.
+- Name only what is there: never what she doesn't wear or do ("no jewellery", "no smile").
 - Fixed text is copied word for word; only the `{SLOTS}` change. Never the aspect ratio or the resolution.
 
 | Slot | Write | Example |
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing | "a bedroom in warm lamp light, a close selfie" |
 | `{KEPT}` | what of the scene stays, ending "as <Video 1>" | "the same bedroom, lamp light and camera path as <Video 1>" |
-| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Her arm toward the lens or a face filling a close frame = selfie; then end with "her other hand is empty", or "her hands stay out of view" when no hand shows. A small drift = another person; a still background = standing still; in a moving vehicle judge by her arm and the framing, not the background. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
-| `{SCENE}` | the place and its 3–5 main objects, in the order they appear; no other people, no small details | "a bedroom with a white bed, a window with blinds and a desk lamp" |
+| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Selfie = her arm reaches toward the lens, or a hand never shows; then end with "her other hand is empty", or "her hands stay out of view" when no hand shows. Both hands free and a small drift = another person. A still background, or a phone fixed in a car = standing still. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
+| `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things), in the order they appear; no other people, no small details | "a bedroom with a white bed, a window with blinds and a desk lamp" |
 | `{FRAMING}` | how close, from where to where, and which parts of her body are in view, named as body parts (never what covers them) | "She is framed close from slightly above, from the top of her head to her chest; the view shows her face, her shoulders and one hand." |
 | `{MOVES}` | the facing sentence, then one sentence every half second (Moves) | |
-| `{CAMERA}` | one sentence ending "matching the framing and speed of <Video 1> throughout." Still, drift, follow, swing, tilt or roll, as the strips show | "The camera is held close with a small handheld drift and rolls a little, matching the framing and speed of <Video 1> throughout." |
+| `{CAMERA}` | one sentence ending "matching the framing and speed of <Video 1> throughout." Still, drift, follow, swing, tilt or roll, as the strips show; a camera move only if the background moves. The background sliding to the picture left = the camera swings to the picture right | "The camera is held close with a small handheld drift and rolls a little, matching the framing and speed of <Video 1> throughout." |
 | `{LIGHT}` | "the same <light> as the <place>" | "the same warm lamp light as the bedroom" |
-| `{SOUND}` | the kinds of sound, in order; only what you're sure of | "a pop song with a woman's singing voice over a steady beat" |
-| `{CLOTHES}` (face swap) | every garment as the frames show it (colour, kind, visible details), then jewellery and anything else she wears; the same text in every shot | "a white top with thin straps and a low neckline, a thin gold chain and small silver stud earrings" |
+| `{SOUND}` | the kinds of sound, in order; only what you're sure of; her words go in the moves, not here | "a pop song with a woman's singing voice over a steady beat" |
+| `{CLOTHES}` (face swap) | every garment as the frames show it (colour, kind, visible details), then jewellery and anything else she wears; one phrase with no full stop inside, the same in every shot | "a white top with thin straps and a low neckline, a thin gold chain and small silver stud earrings" |
 | `{HAIR}` (face swap) | the hair part of her `{FACE_LINE}` | "long, straight and medium chestnut-brown" |
 | `{TIME_k}` (several shots) | shot k's `start` in `shots.json` (or your split), as `MM:SS.mmm` | "00:04.250" |
 
 ### Moves: one sentence every half second
-- The facing sentence first: which way her body faces, and "she never turns" when she doesn't. A turn = you see her side or her back; while her chest faces the camera it's a sway. Write a turn only if the frames show one.
-- Then `(at 0.0 s)`, `(at 0.5 s)`, … up to the last anchor the audit prints. An anchor covers its half second (`(at 4.0 s)` = 4.0 to 4.5 s). The clock runs through cuts: a later shot opens at the first half second after its cut.
+- Every shot opens with its facing sentence: which way her body faces, and "she never turns" when she doesn't. A turn = you see her side or her back; while her chest faces the camera it's a sway. Her head turning to profile while her chest stays to the camera is a head move: write it, the body still never turns.
+- Then `(at 0.0 s)`, `(at 0.5 s)`, … up to the last anchor the audit prints. An anchor covers its half second (`(at 4.0 s)` = 4.0 to 4.5 s) and belongs to the shot where it starts. The clock runs through cuts: a later shot opens at the first anchor at or after its cut.
 - 12–22 words each, at most two gestures, each with its verb. Nothing new: say what she holds ("keeps the finger raised").
 - A big head roll or tilt (her head leaning far to one side) is a move: write it with its side. Small tilts can go.
-- Hands: "one hand", "her other hand", or the picture side ("the hand at the picture right"). Objects she holds stay: name them in `{STYLE}` and in the moves. Never a phone in her hand.
+- Many quick beats (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice").
+- Hands: "one hand", "her other hand", or the picture side ("the hand at the picture right"). Objects she holds stay: name them in `{STYLE}` and in the moves.
+- Never a phone in her hand: the model paints one ("filmed from a phone standing still" is fine, that phone is the camera).
+- Eyes hidden (sunglasses, hair): write where her head faces, never what covers the eyes.
+- Her head leaves the frame: keep the template's face line anyway and write the move ("the camera drops to her waist").
 - Example: "She keeps her front to the camera and never turns. (at 0.0 s) One hand covers her mouth, her eyes on the lens. (at 0.5 s) The hand slides down to her chin as her head tips toward the picture right."
 
 ### Her mouth
 - Only from the face strips (her face every 1/4 s, times on the tiles); the dense strip where it changes fast.
-- Say her resting mouth at the start and whenever she goes back to it.
+- Say her resting mouth at the start and whenever she goes back to it. Lips moving to the song with no word in `words.txt` (a held note, a hum): "her lips shape the note", no `<d>`.
 - An odd shape (pout, kiss, lip bite, tongue out, mouth wide open: clearly not her resting mouth) is written where it starts and where it ends; both in the same sentence when it lasts less than half a second. A shape with no end is held by H3 to the end of the video. The last anchor says the mouth she ends with.
 - Example: "(at 6.0 s) She looks at the lens, her lips pushed into a small, sudden pout. (at 7.0 s) Her lips relax and close."
 
@@ -161,7 +169,8 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 - Only when her lips move to the words (face strip). Each word or short phrase from `words.txt` goes in the anchor where her lips start it, in its language; words in the same half second share one `<d>`. The first one names the woman who sings (step 1 table), later ones start with `(S1)`. Speech: `(S1) says, <d>[English] …</d>`.
 - Example (character swap): "(at 2.5 s) <Subject 1> (S1) sings along, <d>[English] hold me</d>, her eyes closed. (at 3.0 s) (S1) sings along, <d>[English] closer</d>, her mouth wide open."
 - Fix `words.txt` from the face strip and the spectrogram: a first word stretched back to 0.00 s, a misheard word, a stock phrase on a clip where nobody sings (invented). Words after the render's end are dropped.
-- With her words, keep the template's lip-sync sentence. Without them, drop it and audit with `--no-lip-sync`.
+- A song she doesn't mouth: no `<d>` lines; it goes in `{SOUND}` only ("a pop song with a woman's singing voice").
+- With her words, keep the template's lip-sync sentence. Without them, delete it (step 6) and audit with `--no-lip-sync`.
 
 ### Banned words
 The audit reads these lists and names any word that fires; use other words ("pulls her arm back", not "drawn back"):
@@ -171,10 +180,8 @@ The audit reads these lists and names any word that fires; use other words ("pul
 - Exempt from the source-wear list: the sheet's outfit text (`{OUTFIT}`, `{OUTFIT_LOCK}`) and, in a face swap, `{CLOTHES}`.
 - The list can't be complete: outside `{CLOTHES}`, no word for anything the source woman wears (sleeve, zip, fabric, strap, logo, ring).
 
-## Character-swap template
-
 ### Length
-The audit's limit: 750 words + 150 per later shot + 45 per second past 3 s. Over it, shorten the sentences, never drop an anchor.
+The fixed text is ~340 words. `{FRAMING}` up to 35 words, `{SCENE}` up to 30, the other slots one short sentence; the rest is the moves. The audit's limit: 750 words + 150 per later shot + 45 per second past 3 s. Over it, shorten the sentences, never drop an anchor.
 
 ## Character-swap template
 ### Template
