@@ -27,7 +27,7 @@
 ## Rules for this task
 - **Hide only her face and hair.** The model keeps what it can see, so her clothes stay.
 - **Name exactly what she wears** in `{CLOTHES}`: every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery. Example: `a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings`. The source-wear ban does not apply to this slot; the audit exempts it. Unnamed, H3 can redress her (2026-11-23, below).
-- **Her lips follow the clip's sound:** the template's lip-sync sentence stays in every prompt that keeps the sound (once, in shot 1); the no-sound variant drops it.
+- **Her lips:** the lip-sync sentence (once, in shot 1) is the character swap's "Sing or not" choice; the no-sound variant always drops it.
 - **Her hair is the character's, in every shot:** `{HAIR}` repeats the hair part of her line (The person, below). Never the source's hair.
 - **No outfit sentence**: it would dress her in the sheet's outfit.
 - **Face and hair only:** her body shape is not named, because the body stays the source's.

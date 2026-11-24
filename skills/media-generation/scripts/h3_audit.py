@@ -50,7 +50,7 @@ def sec(t, name):
     return m.group(1) if m else ""
 
 
-SKIP = lambda x: x.endswith(":") or "original sound" in x or "audio reuse" in x or "sound remain" in x or x == "N/A"
+SKIP = lambda x: x.endswith(":") or "original sound" in x or "audio reuse" in x or "sound remain" in x or "soundtrack itself is unchanged" in x or x == "N/A"
 pat = lambda x: r".+?".join(re.escape(re.sub(r"\s+", " ", q)) for q in re.split(r"\{[^}]*\}", x))
 norm = lambda s: re.sub(r"\s+", " ", s)
 
@@ -87,7 +87,7 @@ def limit(shots, seconds=None):
     return MAX_WORDS + PER_LATER_SHOT * max(shots - 1, 0) + PER_SECOND * max((seconds or 0) - 3, 0)
 
 
-def audit(t, seconds=None):
+def audit(t, seconds=None, lip_sync=True):
     tl = t.lower()
     sd, ra, su, dd = (sec(t, k) for k in ("subject_definitions", "retention_analysis", "summary", "detailed_description"))
     kind = "face" if "only her face, identity and hair" in sd else "character"
@@ -118,8 +118,9 @@ def audit(t, seconds=None):
         "1 banned: source wear": not re.search(OLD, worn),
         # [Agent] The two sound variants are all-or-nothing: either every original-sound line is there, or none is.
         "4 sound lines match one variant": sound_ok(t, su, vret),
-        # [Agent] Both swaps keep her lips on the clip's sound: the fixed lip-sync sentence, unless the sound is dropped.
-        "4 lip-sync line (with sound)": "audio reuse" not in su or "lip-syncs the vocals in the original sound of <video 1>" in tl,
+        # [Agent] The lip-sync sentence is a choice per clip (--no-lip-sync): with it she sings along to the vocals she hears,
+        # without it her mouth follows the source. Either way it is all or nothing, and never without the sound.
+        "4 lip-sync line (with sound)": ("lip-syncs the vocals in the original sound of <video 1>" in tl) == (lip_sync and "audio reuse" in su),
         "6 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
         "6 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
         "7 shots + timestamps": shots_pass,
@@ -196,6 +197,7 @@ if __name__ == "__main__":
     ap.add_argument("--slots", help="a folder with one .txt per Clip prompt box: builds and audits the character-swap prompt")
     ap.add_argument("--seconds", type=float, help="the clip's length in seconds (the word limit grows past 3 s)")
     ap.add_argument("--no-sound", action="store_true", help="--slots only: the no-sound variant (sound.txt = the new soundscape)")
+    ap.add_argument("--no-lip-sync", action="store_true", help="the prompt drops the lip-sync sentence (she does not sing along)")
     a = ap.parse_args()
     if a.slots:
         text = from_slots(a.slots, not a.no_sound)
@@ -207,7 +209,7 @@ if __name__ == "__main__":
     else:
         ap.error("give a folder of prompts or --slots <folder>")
     if not prompts: sys.exit("no .txt prompts in " + a.dir)
-    rows = [(name, len(t.split()), *audit(t, a.seconds)) for name, t in prompts]
+    rows = [(name, len(t.split()), *audit(t, a.seconds, not a.no_lip_sync)) for name, t in prompts]
     w = max(len(k) for k in rows[0][2]) + 2
     print("check".ljust(w) + "".join(r[0][-6:].ljust(7) for r in rows))
     for k in rows[0][2]:
