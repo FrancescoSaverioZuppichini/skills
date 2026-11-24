@@ -8,8 +8,8 @@ description: Use EVERY time you make an image, video or voice with the lab's Com
 ## Pick your task
 | You want | Task file | Workflow | Model |
 |---|---|---|---|
-| A character replaces the whole person in a video | `tasks/video-character-swap.md` | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
-| Only the face and hair in a video (on request only) | `tasks/video-face-swap.md` | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
+| A character replaces the whole person in a video (character swap, the default) | `tasks/video-swap.md` | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
+| Only the face and hair in a video (face swap, on request only) | `tasks/video-swap.md` (Pick the mode) | `minimax-h3-reference-to-video` | `models/minimax-h3.md` |
 | A swap render back in the source clip's colour grade (optional: after every video swap measure it, and ask when a channel shifts 25+ levels) | `tasks/video-color-match.md` | cv-tools `color_match` + ffmpeg | no prompt |
 | A character replaces the whole person in a photo | `tasks/image-character-swap.md` | `qwen-character-swap` | `models/qwen-image-edit.md` |
 | Dress a person or a character sheet in an outfit from a picture | `tasks/image-outfit-swap.md` | `qwen-outfit-swap` | `models/qwen-image-edit.md` |

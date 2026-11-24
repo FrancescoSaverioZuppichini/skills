@@ -1,6 +1,19 @@
-# Task: character swap in a video
+# Task: swap the person in a video (character swap or face swap)
 
-**Goal:** the character from a character sheet replaces the whole person in a source clip: face, hair, body and clothes. Motion, expression timing, scene, camera and sound follow the clip. Not a face swap (`video-face-swap.md`, on request only).
+**Goal:** the character from a character sheet takes the place of the woman in a source clip. Motion, expression timing, scene, camera and sound follow the clip.
+
+## Pick the mode first
+**Character swap is the default. Face swap only when the user asks for the face only; never propose it.** Everything in this file is the same for both modes, except these rows:
+
+| | Character swap (default) | Face swap (on request) |
+|---|---|---|
+| What changes | her whole person: face, hair, body and clothes come from the sheet | only her face and hair; her body, clothes and jewellery stay the source's |
+| Guide flags (step 5) | `GUIDE=(--mask-prompt person --mask-grow 0 --color)` | `GUIDE=(--mask-prompt "head, hair" --mask-grow 0.02 --include head,face)` (no `--color`: never rendered face-only) |
+| `Picture 1 · sheet` | her dressed character sheet | her sheet or a face picture |
+| Her values (The person) | `{OUTFIT}`, `{CHARACTER_LINE}`, `{OUTFIT_LOCK}` | `{FACE_LINE}`, `{HAIR}` |
+| Her clothes in the prompt | never named: the sheet's outfit, `She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}.` in every shot | named exactly, from the raw frames: `She wears {CLOTHES}. Her hair is {HAIR}.` in every shot; never the outfit sentence |
+| Template (step 6) | Character-swap template | Face-swap template |
+| Prompt file | `$OUT/prompt/prompt.txt` | `$OUT/prompt/prompt.txt` (the audit tells the modes apart by `<Subject 1>`) |
 
 **Model:** MiniMax H3 (Singularity + Pika). How H3 prompts work, shots, length: `models/minimax-h3.md`. Render setup and where every rule came from: `references/video-character-swap-history.md`.
 
@@ -24,13 +37,15 @@ Every run starts from these. Change one only for its scenario below, and say whi
 |---|---|
 | Part | the whole clip, one run (the multi-shot prompt when it has cuts) |
 | Clip prep | as given; turned upright if sideways, bars cropped (scenarios) |
-| Guide | `--mask-prompt person --mask-grow 0 --color`, one track per shot |
+| Mode | character swap |
+| Guide | the mode's flags (above), one track per shot |
 | Prompt | the template; moves anchored every 0.5 s; mouth from the face strips; no words, no lip-sync sentence |
-| Sheet | the dressed sheet the workflow loads |
+| Sheet | the mode's sheet (above); the dressed sheet the workflow loads |
 | Render | ~1 MP, seed 1001, sound kept, Spark on, REFINE and DE-ROPE off |
 
 | Scenario | Change | Where |
 |---|---|---|
+| The user asks for the face only | face swap: its guide flags, template, values and `{CLOTHES}` | Pick the mode |
 | Her head lies sideways most of the clip | turn the clip upright, every step on it, the render turned back | step 1 |
 | Black bars around a shot | crop them (tell the user; keep only if asked) | step 2 |
 | A dissolve or glitch into a new angle | it is a cut: split there | step 2 |
@@ -58,7 +73,7 @@ NAME=clip1                    # a unique name for the files sent to ComfyUI
 mkdir -p "$OUT/prompt"
 ```
 
-0. **New outfit only.** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write the sheet's three values (The person, below) for the new outfit and use them in the prompt.
+0. **New outfit only (character swap).** Dress the undressed body sheet with `image-outfit-swap.md` (Image 1 = the body sheet, Image 2 = the outfit picture, finishing steps off). Only Qwen-dressed sheets are allowed, never one dressed by H3. Then write the sheet's three values (The person, below) for the new outfit and use them in the prompt.
 1. **The part to render.** Whole clip: `CLIP="$SRC"`. A part or one shot: cut it, keeping the sound; take the times from step 2's `shots.json` when it's a shot.
    ```bash
    CLIP="$OUT/clip.mp4"
@@ -95,9 +110,10 @@ mkdir -p "$OUT/prompt"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
    [ -n "$AUDIO" ] && "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" > "$OUT/words.txt"   # start end word (speech-transcribe.md)
    ```
-5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask and tinted by part (`--color`: face green, hair red, body blue), the pose drawn on top; the prompt never names the tints. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
+5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Character swap: her whole body is blurred inside her SAM mask and tinted by part (`--color`: face green, hair red, body blue), the pose drawn on top. Face swap: only her head and hair are blurred (SAM 3 pools both text masks), only the head's lines and the brow + mouth dots are drawn; her body stays visible, with no skeleton (lines over a visible body are what H3 paints). The prompt never names the tints or the drawing. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
    ```bash
-   GUIDE=(--mask-prompt person --mask-grow 0 --color)
+   GUIDE=(--mask-prompt person --mask-grow 0 --color)                          # character swap
+   # GUIDE=(--mask-prompt "head, hair" --mask-grow 0.02 --include head,face)   # face swap
    python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
    : > "$OUT/guides.txt"
    while read -r k a b; do
@@ -109,7 +125,7 @@ mkdir -p "$OUT/prompt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
    Then look at the joined guide: no frame where she is unblurred. A clip that fades to black at the end stops `motion_guide` on its last shot ("SAM lost the person on N frames"): end that shot before the black frames in `$OUT/shots.txt` and rerun, as long as it still covers the 17n+5 frames the workflow renders.
-6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy the template below word for word, fill the person's three values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
+6. **Write the prompt** into `$OUT/prompt/prompt.txt`: copy **your mode's** template (Character-swap template or Face-swap template, below) word for word, fill her values (The person, below), and replace every other `{SLOT}` with this clip's text, from the strips and close-ups of the **raw** clip, never from the guide. Several shots: add one later-shot block per shot (template below). Rules: "Writing the slots" below. This whole text is what goes in the workflow's `Swap prompt` box.
 7. **Audit** (exit 1 = fix and rerun; add `--no-lip-sync` when the sentence is dropped), then reread every move against the strips (checks 10–12):
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$LEN"
@@ -128,16 +144,21 @@ mkdir -p "$OUT/prompt"
   [Shot 2] At 00:04.250, the shot cuts to <Subject 1> in <Subject 3>: <place and its main objects in shot 2>. <how close, from where to where, which body parts are in view> She wears the outfit of <Subject 1> in every frame: {OUTFIT_LOCK}. <shot 2's moves, in order> <one sentence ending "matching the framing and speed of <Video 1> throughout.">
   ```
 - The retention lines say `(throughout [Shot 1], [Shot 2])`, and the closing sentence becomes "It cuts only where <Video 1> cuts."
+- Face swap: the same, with its own later-shot line (Face-swap template).
 
 ## The person
-The workflow has no persona node. Who she is and what she wears come from two inputs:
-- `Picture 1 · sheet`: her dressed character sheet.
-- `Swap prompt`: the whole prompt. Its only per-person text is these three values, copied verbatim.
+The workflow has no persona node. Who she is (and, in a character swap, what she wears) comes from two inputs:
+- `Picture 1 · sheet`: her dressed character sheet (face swap: a face picture is enough).
+- `Swap prompt`: the whole prompt. Its only per-person text is her values, copied verbatim: three for a character swap, two for a face swap.
 
-Our character's dressed sheet:
+Character swap, our character's dressed sheet:
 - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
 - `{CHARACTER_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
 - `{OUTFIT_LOCK}`: `the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips`
+
+Face swap, our character:
+- `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
+- `{HAIR}`: `long, straight and medium chestnut-brown`
 
 Another person or outfit: change only those two inputs, her values written the same way.
 ```bash
@@ -146,7 +167,7 @@ Another person or outfit: change only those two inputs, her values written the s
 ```
 
 ## Writing the slots
-Write only what the raw frames show: never from the blurred guide, never from another clip, never what you hope the render does. Her look comes only from the sheet: never name the source person's clothes, accessories, hairstyle, hair colour or skin ("her hair" as something that moves is fine; never a hairstyle). Never name anything drawn, hidden or overlaid on the input, not even to exclude it. Fixed text is copied word for word; only `{SLOTS}` change. Keep the clip's sound unless told otherwise.
+Write only what the raw frames show: never from the blurred guide, never from another clip, never what you hope the render does. Her look comes only from the sheet: never name the source person's hairstyle, hair colour or skin ("her hair" as something that moves is fine; never a hairstyle). Her clothes and accessories: character swap, never named; face swap, named exactly in `{CLOTHES}` and nowhere else. Never name anything drawn, hidden or overlaid on the input, not even to exclude it. Fixed text is copied word for word; only `{SLOTS}` change. Keep the clip's sound unless told otherwise.
 
 Directions are **picture directions**, as the video plays: top, bottom, left, right of the frame (upright, step 1).
 
@@ -156,10 +177,12 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 | `{KEPT}` | what of the scene stays, ending "as `<Video 1>`" | "the same <place>, light and camera path as <Video 1>" |
 | `{STYLE}` | one sentence: "Realistic phone footage <where, light>, filmed <by another person holding the phone / from a phone standing still / as a selfie at arm's length>; she holds nothing." or "…; she holds <object> in one hand." Her outstretched arm toward the lens = selfie (then end with "her other hand is empty", or "her hands stay out of view" when neither shows, instead of "she holds nothing"); the background never moves = standing still; a small drift = another person. | |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things, in the order they appear; the swing itself goes in `{CAMERA}`). Leave out other people and small details: they stay because the scene is kept | "<place> with <object>, <object> and <object>" |
-| `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view**, named as body parts (her top, waist, hips, legs); the outfit text decides what covers them | "She is framed <how close, from which angle>, from <where> to <where>; the view shows <body parts in view>." |
+| `{FRAMING}` | one or two sentences: how close, from where to where, and **which parts of her body are in view**, named as body parts (her top, waist, hips, legs); the outfit text (or `{CLOTHES}`) decides what covers them, never this slot | "She is framed <how close, from which angle>, from <where> to <where>; the view shows <body parts in view>." |
 | `{MOVES}` | First the facing sentence, then **one sentence every 0.5 s, each opening with its time on the clip's clock**: `(at 0.0 s)`, `(at 0.5 s)`, …, from the half-second strip (step 2), 12–22 words each. An anchor covers its half second (`(at 4.0 s)` = 4.0–4.5 s); the last one is the last half second the render covers (its 17n+5 length, step 1). The clock never restarts at a cut: shot 2 cut at 7.9 s opens `(at 8.0 s)`. At most two gestures per sentence (expressions and the wind don't count), each with its verb ("covers her mouth and laughs"); nothing new = say what she holds ("keeps the finger raised"). **Say which way her body faces and write a turn only if the frames show one.** A turn = you see her side or her back; while her chest faces the camera it's a sway ("her hips sway", "her weight shifts", never "her body angles"). If she never turns, say so. Can't tell a direction: leave it out. Small head tilts can be left out. | "She keeps her front to the camera the whole time and never turns. (at 0.0 s) One hand covers her mouth, her eyes on the lens. (at 0.5 s) The hand slides down to her chin." |
 | `{CAMERA}` | one sentence ending "…matching the framing and speed of <Video 1> throughout." Still, handheld drift, following, a swing or a tilt, as the strip shows; a camera move only if the background moves. The background sliding to the picture left = the camera swings to the picture right | "The camera stays still, matching…" |
 | `{LIGHT}` | "the same <light> as the <scene>" | "the same <light> as the <place>" |
+| `{CLOTHES}` (face swap) | every garment as the raw frames show it (colour, kind, the details you can see), then her jewellery and what else she wears (earphones and their cable); the same text in every shot. Unnamed, H3 redresses her (2026-11-23) | "a black zip-up jacket with silver zips, open at the neck, over a black hooded top, with a thin silver chain necklace and small silver hoop earrings" |
+| `{HAIR}` (face swap) | the hair part of her `{FACE_LINE}`, the same in every shot; never the source's hair | "long, straight and medium chestnut-brown" |
 | `{SOUND}` | the kinds of sound, in order; her own words go in `{MOVES}`, not here; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
@@ -174,9 +197,10 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
   - drawing: `skeleton, keypoint, keypoints, guide, guides, drawn, drawing, dots, pose line, pose lines, drawn line, drawn lines, face marks, white marks`
   - overlays: `sticker, stickers, overlay, overlays, caption, captions, speech bubble, speech bubbles, on-screen, card, cards`
   - source wear: `corset, corsets, garter, garters, choker, chokers, stocking, stockings, pvc, latex, tattoo, tattoos, blouse, blouses, necklace, necklaces, pendant, pendants, bun, buns, ponytail, ponytails, updo, braid, braids, sneaker, sneakers, trainers, boot, boots, heels, sandals, shoes, socks, jeans, trousers, pants, sweatpants, joggers, leggings, shorts, hoodie, hoodies, sweater, sweaters, jumper, jumpers, cardigan, cardigans, jacket, jackets, coat, coats, t-shirt, t-shirts, tank top, tank tops, crop top, crop tops, sports bra, sports bras, bra, bras, bikini, bikinis, dress, dresses, earring, earrings, bracelet, bracelets, ring, rings, lanyard, lanyards, glove, gloves, glasses, sunglasses, hat, hats, scrunchie, scrunchies, hair tie, hair ties, belt, belts`
-  - The sheet's own outfit text (`{OUTFIT}`, `{OUTFIT_LOCK}`) is exempt from the source-wear list.
+  - Exempt from the source-wear list: the sheet's outfit text (`{OUTFIT}`, `{OUTFIT_LOCK}`) and, in a face swap, `{CLOTHES}`.
   - The list can't be complete: no word for anything the source woman wears (sleeve, zip, fabric, strap, logo) is allowed either.
 
+## Character-swap template
 ### Template
 `{…}` is filled per clip. Everything else is fixed text, copied word for word.
 
@@ -247,6 +271,72 @@ N/A
 
 **Length** (the fixed text alone is ~340 words): a 3 s single shot lands at 540–670 words. Per shot: `{MOVES}` 30–45 words per second, `{FRAMING}` up to 35, `{SCENE}` up to 30, the other slots one short sentence; trim words inside the `{MOVES}` sentences first, never an anchor. The audit fails above 750 words + 150 per later shot + 45 per second past 3 s (`--seconds`).
 
+## Face-swap template
+All of "Writing the slots" holds; its own fixed text, `{CLOTHES}` and `{HAIR}` in every shot, no outfit sentence, her body shape never named.
+
+### Template
+`{…}` is filled per clip. Everything else is fixed text, copied word for word.
+
+```
+subject_definitions:
+<Subject 1> is the young woman of the character sheet <Picture 1>: only her face, identity and hair. {FACE_LINE}
+<Subject 2> is the woman in <Video 1>: her body, her clothes and jewellery, her body motion, head turns, hand gestures, expression timing, mouth movement, gaze, position and scale in the frame.
+<Subject 3> is the scene of <Video 1>: {SCENE_SHORT}.
+<Video 1> is the source video for the target video edit. The woman's face and hair in it are hidden under a heavy blur. The blur only carries her head motion and expression; it is not part of any picture, and it never appears in the target video.
+
+summary:
+[video editing + audio reuse] The target video is an edited version of <Video 1>. <Subject 2> gets the face and hair of <Subject 1> and keeps everything else, in <Subject 3>, with the original sound. She stays dressed exactly as in <Video 1> in every frame, in the same clothes and jewellery; nothing of <Picture 1> other than the face and hair appears. The blur on <Video 1> is not part of the target video.
+
+retention_analysis:
+<Video 1> (shot length and original sound): partially_preserved - the shot length and the sound remain; the woman's face and hair and the blur are not kept.
+<Subject 2> (throughout [Shot 1]): partially_preserved - her body, clothes, jewellery, movement, gestures, expression timing, mouth movement, gaze, position and scale remain; only her face and hair are replaced by those of <Subject 1>.
+<Subject 3> (throughout [Shot 1]): fully_preserved - {KEPT}.
+<Subject 1> (throughout [Shot 1]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
+
+detailed_description:
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1>, whether she speaks or sings; the soundtrack itself is unchanged. {CAMERA} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. One continuous shot with no cuts.
+
+overall_soundscape:
+The original sound of <Video 1>: {SOUND}.
+
+non_diegetic_music:
+N/A
+```
+
+**Two shots**, exactly what the audit builds (`template(task, 2)`):
+
+```
+subject_definitions:
+<Subject 1> is the young woman of the character sheet <Picture 1>: only her face, identity and hair. {FACE_LINE}
+<Subject 2> is the woman in <Video 1>: her body, her clothes and jewellery, her body motion, head turns, hand gestures, expression timing, mouth movement, gaze, position and scale in the frame.
+<Subject 3> is the scene of <Video 1>: {SCENE_SHORT}.
+<Video 1> is the source video for the target video edit. The woman's face and hair in it are hidden under a heavy blur. The blur only carries her head motion and expression; it is not part of any picture, and it never appears in the target video.
+
+summary:
+[video editing + audio reuse] The target video is an edited version of <Video 1>. <Subject 2> gets the face and hair of <Subject 1> and keeps everything else, in <Subject 3>, with the original sound. She stays dressed exactly as in <Video 1> in every frame, in the same clothes and jewellery; nothing of <Picture 1> other than the face and hair appears. The blur on <Video 1> is not part of the target video.
+
+retention_analysis:
+<Video 1> (shot length and original sound): partially_preserved - the shot length and the sound remain; the woman's face and hair and the blur are not kept.
+<Subject 2> (throughout [Shot 1], [Shot 2]): partially_preserved - her body, clothes, jewellery, movement, gestures, expression timing, mouth movement, gaze, position and scale remain; only her face and hair are replaced by those of <Subject 1>.
+<Subject 3> (throughout [Shot 1], [Shot 2]): fully_preserved - {KEPT}.
+<Subject 1> (throughout [Shot 1], [Shot 2]): attribute_transfer - only her face and hair come from <Picture 1>, not from <Video 1>; her face's skin tone matches the neck and arms of <Subject 2>, never the colour of the blur.
+
+detailed_description:
+{STYLE} [Shot 1] <Subject 2>, with the face and hair of <Subject 1>, performs her own motion and expressions as shown in <Video 1>, frame by frame, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} She lip-syncs the vocals in the original sound of <Video 1>, whether she speaks or sings; the soundtrack itself is unchanged. {CAMERA} [Shot 2] At {TIME_2}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE_2}. {FRAMING_2} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES_2} {CAMERA_2} Her face is sharp, natural and fully visible in every frame, lit by {LIGHT}, with real skin texture. The picture is clean, with no blur anywhere. It cuts only where <Video 1> cuts.
+
+overall_soundscape:
+The original sound of <Video 1>: {SOUND}.
+
+non_diegetic_music:
+N/A
+```
+
+**Several shots** (open: never rendered face-only; same rules as the character swap):
+- Later shot: `[Shot {N}] At {TIME}, the shot cuts to <Subject 2>, with the face and hair of <Subject 1>, in <Subject 3>: {SCENE}. {FRAMING} She wears {CLOTHES}. Her hair is {HAIR}. {MOVES} {CAMERA}`
+- Closing sentence: `One continuous shot with no cuts.` becomes `It cuts only where <Video 1> cuts.`
+
+**No sound** (the only allowed changes): the summary prefix becomes `[video editing]`; the lip-sync sentence is dropped; ", with the original sound" is dropped; the `<Video 1>` retention line becomes "(shot length): partially_preserved - the shot length remains; the woman's face and hair and the blur are not kept."; write a new `overall_soundscape`.
+
 ## Run
 Default size: ~1 MP (Output size: from image, 0.92 MP, multiple 32; a 9:16 clip renders 736×1312). Sheet, models and sampler are fixed in the workflow.
 
@@ -293,6 +383,7 @@ A colour match (`video-color-match.md`) goes on each part before the join, from 
 
 ## Check the result
 1. `/history` of the run: the LoadImage input is the sheet you meant.
+1b. Face swap: her clothes match the source's on a synced side by side, and her hair is the character's, not the source's hairstyle.
 2. Every 6th frame at full size: her face, both hands, the outfit present (never nude), no dots or lines painted on her, none of the source's clothes, hairstyle or accessories back.
 3. Facing: she turns only where the raw clip turns. Compare with the raw strips frame by frame.
 4. A synced side by side with the raw clip, with sound: motion, timing, camera and cuts match.
@@ -309,7 +400,7 @@ A colour match (`video-color-match.md`) goes on each part before the join, from 
 | Phone painted in her hand | never name the phone | strong |
 | Small or far face soft | REFINE on; check the moves are true first | medium |
 | Stickers, captions disappear | none yet; accepted | open |
-| Black bars around a shot | kept on the approved final, never named; cropping them away is under test | open |
+| H3 redresses her (face swap) | name her clothes exactly in `{CLOTHES}` | strong |
 
 ## Lessons (dated, evidence)
 - 2026-11-24 · On a clip where she doesn't sing, the lip-sync sentence made her sing on one render and not on another: the mouth lines decide. Medium (1 clip).
@@ -330,3 +421,9 @@ A colour match (`video-color-match.md`) goes on each part before the join, from 
 - 2026-11-02 / 11-13 · De-RoPE fixes fast-motion smear and locks head pose (5 of 5) at 3–4× the time; it does nothing for small faces; at inject 0.67 it re-decided the pose. Off by default; suggested only when the user complains about the motion (rule, 2026-11-22). Medium.
 - 2026-11-19 · Guide fed at 432 or full size instead of half: no visible change, +7 % / +80 % time. Medium.
 - Open: stickers and captions vanish in the redraw; short bob on one clip after the wider blur; barefoot (the sheet has no shoes); sheet details leak (a studded wristband).
+- 2026-11-23 · Face swap · Lip-sync sentence (adapted from a community H3 face-swap workflow): on a full 8.7 s night selfie clip, 2 seeds, the mouth matched the source better than without it (tongue at 4.5 s, mouth open at 5–6.5 s); the owner: "incredible". On 3 s cuts, prompt wording alone barely moved the mouth; a guide with the real lips pasted back followed best but carried the source's lip piercing. Medium.
+- 2026-11-23 · Face swap · Night selfie close-up, black zip jacket, seed 1001: clothes unnamed, H3 drew a strap top and a necklace instead at 0.5 MP and at 1 MP; named in `{CLOTHES}`, the jacket stayed and the framing followed the source closer, but her hair came out nearer the source's length with its red streak. Strong on clothes (rule since then); hair named per shot since then (`{HAIR}`): no visible change on that clip (same seed), kept anyway (owner). Open.
+- 2026-11-17 · Face swap · Six clips × 1 seed (3.75 s, 551–690-word prompts on this template): the character's face and hair with the source's own clothes on 6 of 6; one clip kept the source's pulled-back hairstyle. Judged by the agent that ran them; no person rated them. Medium.
+- 2026-11-17 · Face swap · Those runs used the undressed body sheet; the dressed sheet (the user's call, 2026-11-19) has no face-only render yet. Open.
+- Face swap · open: Source hairstyle stays (pulled back, bun): the character swap fixed it with a wider blur (`--mask-grow 0.05`); not tried here. Open.
+- Face swap · open: Stickers and captions disappear in the redraw. Open, accepted.

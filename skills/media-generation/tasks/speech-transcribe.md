@@ -21,9 +21,10 @@ Read the words against the clip, with the sound. Whisper:
 - invents words on music with no voice ("Thank you so much for joining us"): drop them;
 - starts each word where the previous one ends, so starts run early after a pause or a held note.
 
-For a swap prompt the face strip wins over these times (`video-character-swap.md`, Her words).
+For a swap prompt the face strip wins over these times (`video-swap.md`, Her words).
 
 ## Lessons
 - 2026-11-24 · Whisper turbo, the same words everywhere: fp32 on a CPU 60 s (one box) and 17 s (another) for a 15 s song; bf16 on a 3090 1.8 s, peak 4.5 GiB. Strong.
 - 2026-11-24 · Parakeet TDT 0.6B v3 (MLX on a Mac): 1.0 s and a believable first-word start (2.72 s where Whisper says 0.00), but the sung words wrong on both songs ("Rashina, hit a woke" for "Crashing, hit a wall", "Oh minister" for "oh, promise"). Whisper stays. Medium (2 songs).
+- 2026-11-24 · int8 Whisper turbo (faster-whisper / CTranslate2, 3090): 0.12 s and 1.5 GiB, but greedy int8 dropped the first six words of a song ("Crashing, hit a wall, right now"); beam 5 brought them back misheard ("Rushing"). Its float16 keeps the words at 0.12 s but moves word times up to 0.7 s and needs CUDA 12 cuDNN/cuBLAS on the library path. torchao int8 in transformers: the same words, no faster. bitsandbytes 8-bit: looped on one song. We keep transformers bf16: 1.8 s is nothing next to a render. Medium (2 songs).
 - Open: Qwen3-ASR-1.7B with Qwen3-ForcedAligner-0.6B claims singing and aligned word times; not tried.

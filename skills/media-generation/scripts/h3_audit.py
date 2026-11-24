@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Audit H3 swap prompts against their task file: the checklist + the fixed template text copied verbatim.
-# A prompt whose <Subject 1> says "only her face, identity and hair" is checked against tasks/video-face-swap.md, any other
-# against tasks/video-character-swap.md. One shot: no timestamp. Several: [Shot 1] bare, [Shot N] At MM:SS.mmm, increasing.
+# Both modes live in tasks/video-swap.md: a prompt whose <Subject 1> says "only her face, identity and hair" is checked against its
+# "Face-swap template" section, any other against the rest of the file (the character swap). One shot: no timestamp. Several: [Shot 1] bare, [Shot N] At MM:SS.mmm, increasing.
 # Moves: one "(at X s)" sentence every 0.5 s from 0.0 on the clip's clock; <d> words only with the lip-sync sentence.
 # Usage:
 #   h3_audit.py <dir of .txt prompts> [--seconds S]           audit whole prompts
@@ -13,7 +13,11 @@
 import argparse, glob, os, re, sys
 
 read_task = lambda name: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tasks", name + ".md")).read()
-TASKS = {"character": read_task("video-character-swap"), "face": read_task("video-face-swap")}
+# [Agent] The face-swap section carries its own Template, Later shot and Closing sentence lines; cutting it out of the file leaves
+# [Agent] the character swap's, so every regex below finds exactly one of each per mode.
+SWAP = read_task("video-swap")
+FACE = re.search(r"\n## Face-swap template\n(.*?)(?=\n## |\Z)", SWAP, re.S).group(1)
+TASKS = {"character": SWAP.replace(FACE, ""), "face": FACE}
 # [Agent] The banned words live once, in the task file's "Banned words" list, so the writer and the audit can never disagree.
 # Whole words only: "card" must not fire on "cardigan", and scene words like "parking lines" stay allowed.
 def banned(kind):
