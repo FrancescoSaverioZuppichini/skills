@@ -120,7 +120,7 @@ Directions are **picture directions**, as the video plays: top, bottom, left, ri
 | `{SOUND}` | the kinds of sound, in order; her own words go in `{MOVES}`, not here; name only what you're sure of ("music with a steady beat" when you can't tell whether there's a voice) | "a short voice line at the start, then loud music" |
 
 - **Many quick beats** (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice", "bounces to the beat").
-- **Her mouth:** every mouth beat in order, with what the lips and jaw do ("her lips part", "she opens her mouth wide", "the tip of her tongue shows", "she presses her lips into a pout"). Never write her words or `<d>` lines: the fixed lip-sync sentence carries the sound.
+- **Her mouth:** only from the face strip of the raw clip (`python3 "$SKILL/scripts/face_strip.py" "$CLIP" "$OUT/guide-1/keypoints.npz" "$OUT/face-strip.jpg"`, her face every 1/4 s), never from the frame strips. Every mouth beat in order, with what the lips and jaw do and how long a held look lasts, then what follows ("a small, sudden pout for about one second, then her lips relax and close"); end on the mouth she ends with. Never write her words or `<d>` lines: the fixed lip-sync sentence carries the sound.
 - **Hands:** "one hand" / "her other hand"; when you can't tell which, say where it is ("the hand at the picture right"). **Eyes hidden** (sunglasses, hair): write where her head faces, never what covers the eyes. **Objects she holds** stay: name them in `{STYLE}` and in the moves.
 - **Phones:** never name a phone in her hand, or the model paints one ("filmed from a phone standing still" is fine: that phone is the camera).
 - **Her head leaves the frame:** keep the fixed face line anyway and write the move ("the camera drops to her waist").
@@ -241,6 +241,7 @@ $RUN minimax-h3-reference-to-video \
 | Stickers, captions disappear | none yet; accepted | open |
 
 ## Lessons (dated, evidence)
+- 2026-11-24 · A pout that lasts one second, written as "pushes her lips into a pout" with no end, became a kiss-pout held for the whole 11 s clip (face swap, night car). Mouth lines come from the 1/4 s face strip, each held look with its length. Strong (the owner's rule).
 - 2026-11-24 · Person mask grown 5 % vs not grown (`--mask-grow 0`), one clip, 3 seeds (full clip and two 5 s cuts): the same moves on every seed; not grown leaves the hair edge a touch darker at moments; the user saw her hands drift toward her head with the grow. Not grown is the default. Medium.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
 - 2026-11-14 / 11-16 · Never a ControlNet, for pose or inpainting: wrong timing, wrong hand signs. Strong; the user's hard rule.
