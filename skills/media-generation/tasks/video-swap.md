@@ -15,7 +15,7 @@ Character swap is the default. Face swap only when the user asks for the face on
 | Template | Character-swap template | Face-swap template |
 
 ## 2. Defaults, and when to change them
-Start from the defaults. Change one only for its scenario, and when you show the inputs say what you changed and why.
+Start from the defaults. Change one only for its scenario, and when you show the inputs say what you changed and why. Get it roughly right in one go: the user points out the rest after the render. A doubt that changes the render (the mode, turning the clip, words or not, the sheet): ask before rendering. A small doubt: make the call and say it with the inputs.
 
 | Setting | Default |
 |---|---|
@@ -38,7 +38,6 @@ Start from the defaults. Change one only for its scenario, and when you show the
 | The source's hairstyle or accessories come back | `--mask-grow 0.05` |
 | The user finds her face soft or small | suggest REFINE |
 | The user complains about the motion (smear, wobble, wrong head turn) | suggest DE-ROPE |
-| The render's colour is 25+ levels off the source | ask about `video-color-match.md` |
 
 Ask when the request doesn't say: which clip and which part, which sheet, which seed(s), whether to show the inputs before the render.
 
@@ -66,8 +65,9 @@ mkdir -p "$OUT/prompt"
    - Then:
      ```bash
      LEN=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 "$CLIP")
+     python3 "$SKILL/scripts/h3_audit.py" --seconds "$LEN"   # the render's length and its last anchor
      ```
-     H3 renders only the longest 17n+5 frames at 24 fps that fit (the audit prints how much). Never cut the clip shorter to make it easier.
+     H3 renders only the longest 17n+5 frames at 24 fps that fit; the rest of the clip is not in the video (say so with the inputs). Never cut the clip shorter to make it easier.
 2. **Shots and the half-second strip.**
    ```bash
    (cd "$CV" && .venv/bin/python -m cv_tools.shots --input "$CLIP" --output "$OUT/shots")
@@ -78,10 +78,9 @@ mkdir -p "$OUT/prompt"
 3. **Sound and words.**
    ```bash
    AUDIO=$(ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$CLIP"); echo "audio: ${AUDIO:-none}"
-   [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"   # stacked bands = a voice, a regular beat = music
    [ -n "$AUDIO" ] && "$PY" "$SKILL/scripts/transcribe.py" "$CLIP" > "$OUT/words.txt"   # start end word; add --language <code> when you know it
    ```
-   No audio: the no-sound variant.
+   No audio: the no-sound variant. Real words in `words.txt` = a voice (sung or spoken); nothing, or a stock phrase, = music only.
 4. **Guide and face strips, one per shot.** Free ComfyUI's GPU memory first (`curl -s -X POST <server>/free -d '{"unload_models":true,"free_memory":true}'`).
    ```bash
    GUIDE=(--mask-prompt person --mask-grow 0 --color)   # the mode's flags (step 1)
@@ -108,17 +107,19 @@ mkdir -p "$OUT/prompt"
    ```bash
    python3 "$SKILL/scripts/h3_audit.py" "$OUT/prompt" --seconds "$LEN"
    ```
-8. **Render** (Run), turn it back if you turned the clip upright, then check (Check the result).
+8. **Render** (Run), check it (Check the result), then After the render.
 
 ## The person
 The workflow has no persona node: who she is comes from the sheet (`Picture 1 · sheet`) and her values in the prompt, copied verbatim.
 
-Character swap, our character's dressed sheet:
+These are an example character: use the values of the user's sheet.
+
+Character swap, the example's dressed sheet:
 - `{OUTFIT}`: `a silver chain-mail halter top that leaves her back bare and a glossy black patent-leather mini skirt`
 - `{CHARACTER_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair, warm brown eyes, petite and slim.`
 - `{OUTFIT_LOCK}`: `the silver chain-mail halter top covers her chest and the glossy black patent-leather mini skirt covers her hips`
 
-Face swap, our character:
+Face swap, the example:
 - `{FACE_LINE}`: `She is a 21-year-old woman with long straight medium chestnut-brown hair and warm brown eyes.`
 - `{HAIR}`: `long, straight and medium chestnut-brown`
 
@@ -136,7 +137,7 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing | "a bedroom in warm lamp light, a close selfie" |
 | `{KEPT}` | what of the scene stays, ending "as <Video 1>" | "the same bedroom, lamp light and camera path as <Video 1>" |
-| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Selfie = her arm reaches toward the lens, or a hand never shows; then end with "her other hand is empty", or "her hands stay out of view" when no hand shows. Both hands free and a small drift = another person. A still background, or a phone fixed in a car = standing still. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
+| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Selfie = her arm reaches toward the lens, or only one hand ever shows (end with "her other hand is empty"), or no hand shows (end with "her hands stay out of view"). Both hands show = another person holding the phone. No camera motion at all = a phone standing still. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things), in the order they appear; no other people, no small details | "a bedroom with a white bed, a window with blinds and a desk lamp" |
 | `{FRAMING}` | how close, from where to where, and which parts of her body are in view, named as body parts (never what covers them) | "She is framed close from slightly above, from the top of her head to her chest; the view shows her face, her shoulders and one hand." |
 | `{MOVES}` | the facing sentence, then one sentence every half second (Moves) | |
@@ -150,7 +151,7 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 ### Moves: one sentence every half second
 - Every shot opens with its facing sentence: which way her body faces, and "she never turns" when she doesn't. A turn = you see her side or her back; while her chest faces the camera it's a sway. Her head turning to profile while her chest stays to the camera is a head move: write it, the body still never turns.
 - Then `(at 0.0 s)`, `(at 0.5 s)`, … up to the last anchor the audit prints. An anchor covers its half second (`(at 4.0 s)` = 4.0 to 4.5 s) and belongs to the shot where it starts. The clock runs through cuts: a later shot opens at the first anchor at or after its cut.
-- 12–22 words each, at most two gestures, each with its verb. Nothing new: say what she holds ("keeps the finger raised").
+- Up to 22 words each, at most two gestures, each with its verb. A half second where nothing changes is short ("(at 5.0 s) She holds still, her eyes on the lens.").
 - A big head roll or tilt (her head leaning far to one side) is a move: write it with its side. Small tilts can go.
 - Many quick beats (a dance): keep every change in what her hands or body do; merge repeats ("pushes her hair back twice").
 - Hands: "one hand", "her other hand", or the picture side ("the hand at the picture right"). Objects she holds stay: name them in `{STYLE}` and in the moves.
@@ -162,13 +163,13 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 ### Her mouth
 - Only from the face strips (her face every 1/4 s, times on the tiles); the dense strip where it changes fast.
 - Say her resting mouth at the start and whenever she goes back to it. Lips moving to the song with no word in `words.txt` (a held note, a hum): "her lips shape the note", no `<d>`.
-- An odd shape (pout, kiss, lip bite, tongue out, mouth wide open: clearly not her resting mouth) is written where it starts and where it ends; both in the same sentence when it lasts less than half a second. A shape with no end is held by H3 to the end of the video. The last anchor says the mouth she ends with.
+- An odd shape is one that is not her resting mouth and, while she sings, not just the word's own shape: a pout, a kiss, a lip bite, the tongue out, a smile, the mouth held wide open on a note. Seen on even one tile, write it where it starts and where it ends; both in the same sentence when it lasts less than half a second. A shape with no end is held by H3 to the end of the video. The last anchor says the mouth she ends with.
 - Example: "(at 6.0 s) She looks at the lens, her lips pushed into a small, sudden pout. (at 7.0 s) Her lips relax and close."
 
 ### Her words and the lip-sync sentence
 - Only when her lips move to the words (face strip). Each word or short phrase from `words.txt` goes in the anchor where her lips start it, in its language; words in the same half second share one `<d>`. The first one names the woman who sings (step 1 table), later ones start with `(S1)`. Speech: `(S1) says, <d>[English] …</d>`.
 - Example (character swap): "(at 2.5 s) <Subject 1> (S1) sings along, <d>[English] hold me</d>, her eyes closed. (at 3.0 s) (S1) sings along, <d>[English] closer</d>, her mouth wide open."
-- Fix `words.txt` from the face strip and the spectrogram: a first word stretched back to 0.00 s, a misheard word, a stock phrase on a clip where nobody sings (invented). Words after the render's end are dropped.
+- Fix `words.txt` from the face strip: a first word stretched back to 0.00 s, a misheard word, a stock phrase on a clip where nobody sings (invented). Words after the render's end are dropped.
 - A song she doesn't mouth: no `<d>` lines; it goes in `{SOUND}` only ("a pop song with a woman's singing voice").
 - With her words, keep the template's lip-sync sentence. Without them, delete it (step 6) and audit with `--no-lip-sync`.
 
@@ -181,7 +182,7 @@ The audit reads these lists and names any word that fires; use other words ("pul
 - The list can't be complete: outside `{CLOTHES}`, no word for anything the source woman wears (sleeve, zip, fabric, strap, logo, ring).
 
 ### Length
-The fixed text is ~340 words. `{FRAMING}` up to 35 words, `{SCENE}` up to 30, the other slots one short sentence; the rest is the moves. The audit's limit: 750 words + 150 per later shot + 45 per second past 3 s. Over it, shorten the sentences, never drop an anchor.
+The fixed text is ~340 words. `{FRAMING}` up to 35 words, `{SCENE}` up to 30, the other slots one short sentence; the rest is the moves. The audit's limit: 750 words + 150 per later shot + 45 per second past 3 s. Over it, cut words from the moves, never an anchor, her `<d>` words or her mouth shapes.
 
 ## Character-swap template
 ### Template
@@ -329,9 +330,8 @@ $RUN minimax-h3-reference-to-video \
 ```
 - Another sheet: add `--set "Picture 1 · sheet.image=@/abs/her-sheet.png"`.
 - Output: `<ComfyUI>/output/h3-ref2vid/swap_*.mp4`, with sound. A 3 s clip takes about 2 min on a 3090; longer clips take longer.
-- Turned upright: `ffmpeg -nostdin -y -i <render> -vf transpose=<back> -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy <final>`.
 
-**Several shots** render in one run. Only when that run fails (out of memory) or the user asks, render each shot on its own and join them. Each shot gets the shortest 17n+5-frame window that covers it (the last one reaches back instead of past the end), its own guide, and its own one-shot prompt with anchors from `(at 0.0 s)` (audit with `--seconds` = the window's length); the same seed and sheet. A colour match goes on each part before the join.
+**Several shots** render in one run. Only when that run fails (out of memory) or the user asks, render each shot on its own and join them. Each shot gets the shortest 17n+5-frame window that covers it (the last one reaches back instead of past the end), its own guide, and its own one-shot prompt with anchors from `(at 0.0 s)` (audit with `--seconds` = the window's length); the same seed and sheet. A relight goes on each part before the join (`video-relight.md`).
 ```bash
 python3 - "$OUT/shots.txt" "$LEN" > "$OUT/windows.txt" <<'PYW'
 import math, sys
@@ -371,7 +371,16 @@ ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/parts.txt" -i "$CLIP" -ma
 | The source's hairstyle or accessories back | `--mask-grow 0.05` |
 | A phone painted in her hand | never name the phone |
 | An invented camera move before a cut | the several-shots template with the cut time |
-| Stickers or captions gone | accepted |
+| Captions gone | put them back on request (`video-captions.md`) |
+
+## After the render
+1. Turned upright: turn it back, `ffmpeg -nostdin -y -i <render> -vf transpose=<back> -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy <final>`.
+2. Light: measure the render against the clip on shot 1 (about 1 s; stderr prints the largest shift):
+   ```bash
+   (cd "$CV" && .venv/bin/python -m cv_tools.color_match --source "$OUT/shot-1.mp4" --render <render> --masks "$OUT/guide-1/masks.npz" --end <shot 1 length> > /dev/null)
+   ```
+   25 levels or more on any channel: ask "Relight the render to the source? (largest shift r X, g Y, b Z)". A yes: `video-relight.md`.
+3. Captions: the source had captions or lyric text that the render lost: ask "Put the captions back?". A yes, or the user asks: `video-captions.md`.
 
 ## Lessons (dated, evidence)
 - 2026-11-24 · A one-second pout written with no end was held for the whole 11 s video; written with its end, it ended. Strong (the owner's rule).

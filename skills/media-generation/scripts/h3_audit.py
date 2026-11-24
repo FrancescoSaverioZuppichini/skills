@@ -234,6 +234,9 @@ if __name__ == "__main__":
         prompts = [("prompt", text)]
     elif a.dir:
         prompts = [(os.path.basename(f)[:-4], open(f).read()) for f in sorted(glob.glob(os.path.join(a.dir, "*.txt")))]
+    elif a.seconds:
+        # [Agent] Before writing: the render's length and last anchor, so the moves are planned to the right end.
+        sys.exit(print(f"render: {rendered(a.seconds):.2f} s of {a.seconds:.2f} s; last anchor (at {last_anchor(a.seconds):.1f} s)"))
     else:
         ap.error("give a folder of prompts or --slots <folder>")
     if not prompts: sys.exit("no .txt prompts in " + a.dir)

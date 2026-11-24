@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 FACE = ("eye", "nose", "lip", "mouth", "chin", "jaw")
-TILE, COLUMNS = 240, 11
+TILE, COLUMNS = 240, 6
 
 
 def face_box(points, frame_shape):
