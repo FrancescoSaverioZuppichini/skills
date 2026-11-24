@@ -10,7 +10,7 @@
 #                                                             does, print it, audit it
 # --seconds = the clip's length: the word limit grows with it. Exits 1 on any miss.
 # Importable: audit(text, seconds=None), template(task, shots), fill(slots, shots, times, sheet, audio, sound).
-import argparse, glob, os, re, sys
+import argparse, glob, math, os, re, sys
 
 read_task = lambda name: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tasks", name + ".md")).read()
 # [Agent] The face-swap section carries its own Template, Later shot and Closing sentence lines; cutting it out of the file leaves
@@ -80,11 +80,20 @@ def shots_ok(dd):
             and len(re.findall(r"\b\d{2}:\d{2}(\.\d+)?\b", dd)) == len(tags) - 1), len(tags)
 
 
+def rendered(seconds):
+    # [Agent] The workflow renders the longest 17n+5 frames at 24 fps that fit in the clip; nothing after that exists in the video.
+    return (17 * math.floor((seconds * 24 - 5) / 17) + 5) / 24
+
+
+def last_anchor(seconds):
+    return math.ceil(rendered(seconds) * 2) / 2 - 0.5
+
+
 def anchors_ok(dd, seconds=None):
-    # [Agent] H3 takes her timing from the move list, so every 0.5 s of the clip gets its sentence: 0.0, 0.5, 1.0, … with no gap
-    # and no restart at a cut; with --seconds the last anchor must sit within a second of the end.
+    # [Agent] H3 takes her timing from the move list, so every rendered half second gets its sentence: 0.0, 0.5, 1.0, … with no
+    # gap, no restart at a cut, and (with --seconds) ending on the render's last half second, not the clip's.
     times = [float(x) for x in re.findall(r"\(at (\d+(?:\.\d+)?) s\)", dd)]
-    return bool(times) and times == [k / 2 for k in range(len(times))] and (seconds is None or times[-1] >= seconds - 1)
+    return bool(times) and times == [k / 2 for k in range(len(times))] and (seconds is None or times[-1] == last_anchor(seconds))
 
 
 def sound_ok(t, su, vret):
@@ -148,6 +157,10 @@ def audit(t, seconds=None, lip_sync=True):
     }
     miss = [x for x in fixed if norm(x) not in norm(t)] + [x for x, rx in slotted if not rx.search(norm(t))]
     c["9 fixed text verbatim"] = not miss
+    miss = [f"changed fixed text: {x}" for x in miss]
+    # [Agent] Name the exact banned words that fired, so the writer knows what to rephrase.
+    for label, rx, text in (("overlays", STICK, tl), ("drawing", GUIDE, tl), ("source wear", OLD, worn)):
+        miss += [f"banned ({label}): {w}" for w in sorted(set(re.findall(rx, text)))]
     return c, miss, kind, n
 
 
@@ -232,6 +245,8 @@ if __name__ == "__main__":
     print("words".ljust(w) + "".join(f"{r[1]}/{int(limit(r[5], a.seconds))}".ljust(9) for r in rows))
     print("shots".ljust(w) + "".join(str(r[5]).ljust(7) for r in rows))
     print("template".ljust(w) + "".join(r[4][:4].ljust(7) for r in rows))
+    if a.seconds:
+        print(f"render: {rendered(a.seconds):.2f} s of {a.seconds:.2f} s; last anchor (at {last_anchor(a.seconds):.1f} s)")
     for name, _, _, miss, _, _ in rows:
-        for m in miss: print(f"{name} changed fixed text: {m[:140]}")
+        for m in miss: print(f"{name} {m[:160]}")
     sys.exit(0 if all(all(r[2].values()) for r in rows) else 1)

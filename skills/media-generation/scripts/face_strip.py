@@ -24,10 +24,12 @@ def face_box(points, frame_shape):
 def crop(frame, cx, cy, half, label):
     h, w = frame.shape[:2]
     x0, y0, x1, y1 = (int(max(0, cx - half)), int(max(0, cy - half)), int(min(w, cx + half)), int(min(h, cy + half)))
-    tile = cv2.resize(frame[y0:y1, x0:x1], (TILE, TILE))
-    # [Agent] Night clips are too dark to read lips; a fixed gain is enough and keeps every tile comparable.
-    tile = np.clip(tile.astype(np.float32) * 1.8, 0, 255).astype(np.uint8)
-    cv2.putText(tile, label, (4, 16), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    tile = cv2.resize(frame[y0:y1, x0:x1], (TILE, TILE)).astype(np.float32)
+    # [Agent] Brighten dark tiles toward a mid-grey median so night lips read, but never darken or blow out a daylit face.
+    tile = np.clip(tile * np.clip(110 / max(np.median(tile), 1), 1, 2.5), 0, 255).astype(np.uint8)
+    # [Agent] Black outline under white text: the time stays readable on any skin or light.
+    cv2.putText(tile, label, (4, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 3)
+    cv2.putText(tile, label, (4, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
     return tile
 
 
@@ -52,7 +54,8 @@ def main():
         # [Agent] Pick by time, not by a frame step: at 30 fps a step of 8 frames drifts to 0.267 s and misses the 0.5 s anchors.
         if index < len(k["points"]) and index / fps >= len(tiles) * args.every - 0.5 / fps:
             pts = k["points"][index, face][k["scores"][index, face] > 0.3]
-            tiles.append(crop(frame, *face_box(pts, frame.shape), f"{args.start + index / fps:.2f}"))
+            # [Agent] Label the tile with its slot on the strip's grid (0.25, 0.50, …), the times the anchors use.
+            tiles.append(crop(frame, *face_box(pts, frame.shape), f"{args.start + len(tiles) * args.every:.2f}"))
         index += 1
     blank = np.zeros_like(tiles[0])
     rows = [np.hstack(tiles[r:r + COLUMNS] + [blank] * (COLUMNS - len(tiles[r:r + COLUMNS]))) for r in range(0, len(tiles), COLUMNS)]
