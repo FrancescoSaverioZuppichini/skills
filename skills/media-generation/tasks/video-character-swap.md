@@ -56,9 +56,9 @@ mkdir -p "$OUT/prompt"
    [ -n "$AUDIO" ] && ffmpeg -nostdin -y -i "$CLIP" -lavfi showspectrumpic=s=1024x256:legend=0 "$OUT/spec.png"
    [ -n "$AUDIO" ] && "$CV/.venv/bin/python" "$SKILL/scripts/words.py" "$CLIP" > "$OUT/words.txt"   # start end word
    ```
-5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask, the pose drawn on top. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
+5. **Guide video** (`<Video 1>`), **one per shot:** SAM loses her across a cut (Coffee time, 2026-11-23: tracked from frame 0, lost from the cut to the end), so each shot of step 2 gets its own track, and the guides are joined in order with the clip's sound. One shot runs the loop once. Her whole body is blurred inside her SAM mask and tinted by part (`--color`: face green, hair red, body blue), the pose drawn on top; the prompt never names the tints. Free ComfyUI's GPU memory first (`curl -X POST <server>/free -d '{"free_memory":true}'`).
    ```bash
-   GUIDE=(--mask-prompt person --mask-grow 0)
+   GUIDE=(--mask-prompt person --mask-grow 0 --color)
    python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
    : > "$OUT/guides.txt"
    while read -r k a b; do
@@ -250,6 +250,7 @@ $RUN minimax-h3-reference-to-video \
 ## Lessons (dated, evidence)
 - 2026-11-24 · On a clip where she doesn't sing, the lip-sync sentence made her sing on one render and not on another: the mouth lines decide. Medium (1 clip).
 - 2026-11-24 · A pout that lasts one second, written as "pushes her lips into a pout" with no end, became a kiss-pout held for the whole 11 s clip (face swap, night car). Mouth lines come from the 1/4 s face strip; an odd shape is written where it starts and where it ends. Strong (the owner's rule).
+- 2026-11-23 · Plain blur guide on a face-filling sideways selfie: H3 lost where her face, hair and body were (generic portrait, invented garments); the same clip with the blur tinted by part (face, hair, body): her pose and framing back, the owner's pick ("colour is the winning part"); a depth guide instead: worse. Kept on the 2-shot clip too. Medium (2 clips).
 - 2026-11-23 · H3 takes her timing from the move list: in prose, a 14 s upright singing selfie ran 2 s ahead of the song on every render. One anchored sentence every 0.5 s plus her sung words in `<d>` lines at their times: on time, the owner's pick ("perfect", seed 1001); on a 2-shot 15.5 s clip, shot 1 without them ghosted two poses at 3.8 s, with them clean (1 seed), and the owner chose them for the final. Medium (2 clips).
 - 2026-11-24 · Person mask grown 5 % vs not grown (`--mask-grow 0`), one clip, 3 seeds (full clip and two 5 s cuts): the same moves on every seed; not grown leaves the hair edge a touch darker at moments; the user saw her hands drift toward her head with the grow. Not grown is the default. Medium.
 - 2026-11-14 · Naming the drawing in any wording paints it (white blobs on the face); not naming it: clean on 10 of 10. Strong.
