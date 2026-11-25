@@ -2,8 +2,8 @@
 # Audit H3 swap prompts against their task file: the checklist + the fixed template text copied verbatim.
 # Both modes live in tasks/video-swap.md: a prompt whose <Subject 1> says "only her face, identity and hair" is checked against its
 # "Face-swap template" section, any other against the rest of the file (the character swap). One shot: no timestamp. Several: [Shot 1] bare, [Shot N] At MM:SS.mmm, increasing.
-# Moves: forced audio on (default) = timed lines only for odd faces, in order, inside the render, no <d> words; --no-forced-audio =
-# one "(at X s)" sentence every 0.5 s from 0.0 on the clip's clock, <d> words only with the lip-sync sentence.
+# Moves: one "(at X s)" sentence every 0.5 s from 0.0 on the clip's clock. Forced audio on (default): no <d> words; --no-forced-audio:
+# <d> words only with the lip-sync sentence.
 # Usage:
 #   h3_audit.py <dir of .txt prompts> [--seconds S] [--no-forced-audio] [--no-lip-sync]   audit whole prompts
 #   h3_audit.py --slots <dir> [--seconds S] [--no-sound]      build the character-swap prompt from one .txt per Clip prompt box
@@ -90,15 +90,10 @@ def last_anchor(seconds):
     return math.ceil(rendered(seconds) * 2) / 2 - 0.5
 
 
-def anchors_ok(dd, seconds=None, forced=True):
-    # [Agent] With forced audio the clip's sound sets the timing, so the only timed lines are odd faces: in order, on the face
-    # strip's quarter seconds, inside the render. Without it H3 takes her timing from the move list, so every rendered half
-    # second gets its sentence: 0.0, 0.5, 1.0, … with no gap, no restart at a cut, and (with --seconds) ending on the render's
-    # last half second, not the clip's.
+def anchors_ok(dd, seconds=None):
+    # [Agent] H3 takes her timing from the move list, so every rendered half second gets its sentence: 0.0, 0.5, 1.0, … with no
+    # gap, no restart at a cut, and (with --seconds) ending on the render's last half second, not the clip's.
     times = [float(x) for x in re.findall(r"\(at (\d+(?:\.\d+)?) s\)", dd)]
-    if forced:
-        return (all(a < b for a, b in zip(times, times[1:])) and all(t * 4 == int(t * 4) for t in times)
-                and (seconds is None or not times or times[-1] < rendered(seconds)))
     return bool(times) and times == [k / 2 for k in range(len(times))] and (seconds is None or times[-1] == last_anchor(seconds))
 
 
@@ -155,7 +150,7 @@ def audit(t, seconds=None, lip_sync=True, forced=True):
         "6 no standalone Picture": not re.search(r"^<Picture \d>", sd + "\n" + ra, re.M),
         "6 woman not fully kept": not re.search(r"<Subject 2>[^\n]*fully_preserved", ra),
         "7 shots + timestamps": shots_pass,
-        "7 timed lines in order, in the render" if forced else "7 moves anchored every 0.5 s": anchors_ok(dd, seconds, forced),
+        "7 moves anchored every 0.5 s": anchors_ok(dd, seconds),
         "9 length (--seconds for clips over 3 s)": len(t.split()) <= limit(n, seconds),
         # [Agent] The outfit sentence dresses her in the sheet's outfit: required in every shot of a character swap (nude
         # renders without it), wrong for a face-only swap, where she keeps her own clothes.
@@ -234,7 +229,7 @@ if __name__ == "__main__":
     ap.add_argument("--seconds", type=float, help="the clip's length in seconds (the word limit grows past 3 s)")
     ap.add_argument("--no-sound", action="store_true", help="--slots only: the no-sound variant (sound.txt = the new soundscape)")
     ap.add_argument("--no-lip-sync", action="store_true", help="the prompt drops the lip-sync sentence (she does not sing along)")
-    ap.add_argument("--no-forced-audio", action="store_true", help="forced audio is off: a move every half second, <d> words allowed")
+    ap.add_argument("--no-forced-audio", action="store_true", help="forced audio is off: <d> words allowed")
     a = ap.parse_args()
     if a.slots:
         text = from_slots(a.slots, not a.no_sound)
