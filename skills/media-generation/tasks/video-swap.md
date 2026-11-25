@@ -60,7 +60,8 @@ mkdir -p "$OUT/prompt"
    ```
    - Head sideways: top of her head at the picture left → `transpose=1` (back at the end: `transpose=2`); at the picture right → `transpose=2` (back: `transpose=1`). Every later step uses the upright clip.
      ```bash
-     ffmpeg -nostdin -y -i "$CLIP" -vf transpose=1 -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a copy "$OUT/upright.mp4"; CLIP="$OUT/upright.mp4"
+     T=1   # 2 when the top of her head is at the picture right
+     ffmpeg -nostdin -y -i "$CLIP" -vf transpose=$T -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a copy "$OUT/upright.mp4"; CLIP="$OUT/upright.mp4"
      ```
    - Bars, only when the user asks: `(cd "$CV" && .venv/bin/python -m cv_tools.bars --input "$CLIP" --output "$OUT/nobars.mp4"); CLIP="$OUT/nobars.mp4"`
    - Then:
@@ -95,7 +96,7 @@ mkdir -p "$OUT/prompt"
    done < "$OUT/shots.txt"
    ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/guides.txt" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/$NAME-guide.mp4"
    ```
-   Look at the joined guide: she is blurred in every frame. A fade to black at the end (inside the render) stops the last shot ("SAM lost the person"): end that shot before the black frames in `$OUT/shots.txt` and rerun.
+   Look at the joined guide: she is covered in every frame (a blur, or colour regions with `--color`). A fade to black at the end (inside the render) stops the last shot ("SAM lost the person"): end that shot before the black frames in `$OUT/shots.txt` and rerun.
 5. **Close-ups where she moves fast** (hands, head, mouth), one second at 8 fps, and a denser face strip:
    ```bash
    ffmpeg -nostdin -v error -y -ss <t> -t 1 -i "$CLIP" -vf "fps=8,scale=480:-2,tile=4x2" -frames:v 1 "$OUT/fast-<t>.png"
@@ -163,7 +164,7 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 
 ### Her face
 - Only from the face strips (her face every 1/4 s, times on the tiles); the dense strip where it changes fast.
-- An odd face is one that is not her resting face and, while she sings, not just the word's own mouth shape: a wink, a pout, a kiss, a lip bite, the tongue out, a smile, the mouth held wide open on a note. Seen on even one tile, write a timed line where it starts and where it ends, on the strip's quarter second (`(at 9.25 s)`); both in the same sentence when it lasts less than half a second. A shape with no end is held by H3 to the end of the video.
+- An odd face is one that is not her resting face and, while she sings, not just the word's own mouth shape: a wink, a pout, a kiss, a lip bite, the tongue out, a smile, the mouth held wide open on a note. A shape held on two tiles or more is odd even when a word could make it. Seen on even one tile, write a timed line where it starts and where it ends, on the strip's quarter second (`(at 9.25 s)`); both in the same sentence when it lasts less than half a second. Shapes shorter than a tile: the dense strip (step 5). A shape with no end is held by H3 to the end of the video: leave the end out only for the face she ends on.
 - Forced audio on: only the odd faces; her singing mouth follows the sound by itself.
 - Forced audio off: her mouth goes in the half-second moves. Say her resting mouth at the start and whenever she goes back to it; lips moving to the song with no word in `words.txt` (a held note, a hum): "her lips shape the note", no `<d>`. The last anchor says the mouth she ends with.
 - Example: "(at 6.0 s) She looks at the lens, her lips pushed into a small, sudden pout. (at 7.0 s) Her lips relax and close."
