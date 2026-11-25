@@ -86,7 +86,7 @@ mkdir -p "$OUT/prompt"
 4. **Guide and face strips, one per shot.** Free ComfyUI's GPU memory first (`curl -s -X POST <server>/free -d '{"unload_models":true,"free_memory":true}'`).
    ```bash
    GUIDE=(--mask-prompt person --mask-grow 0 --color)   # the mode's flags (step 1)
-   python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"
+   [ -s "$OUT/shots.txt" ] || python3 -c 'import json, sys; s = json.load(open(sys.argv[1])); [print(x["shot"], x["start_frame"] / s["fps"], (x["end_frame"] + 1) / s["fps"]) for x in s["shots"]]' "$OUT/shots/shots.json" > "$OUT/shots.txt"   # keeps a split made by hand (step 2)
    : > "$OUT/guides.txt"
    while read -r k a b; do
      ffmpeg -nostdin -v error -y -ss "$a" -to "$b" -i "$CLIP" -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a aac -ar 48000 "$OUT/shot-$k.mp4"
@@ -139,7 +139,7 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 |---|---|---|
 | `{SCENE_SHORT}` | 5–12 words: the place, its light, the kind of framing | "a bedroom in warm lamp light, a close selfie" |
 | `{KEPT}` | what of the scene stays, ending "as <Video 1>" | "the same bedroom, lamp light and camera path as <Video 1>" |
-| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Selfie = her arm reaches toward the lens, or only one hand ever shows (end with "her other hand is empty"), or no hand shows (end with "her hands stay out of view"). Both hands show = another person holding the phone. No camera motion at all = a phone standing still. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
+| `{STYLE}` | "Realistic phone footage <where, light>, filmed <as a selfie at arm's length / by another person holding the phone / from a phone standing still>; she holds nothing." Selfie = her arm reaches toward the lens, or only one hand ever shows (end with "her other hand is empty"), or no hand shows (end with "her hands stay out of view"). Both hands show = another person holding the phone, unless her arm reaches toward the lens at some point (then a selfie). No camera motion at all = a phone standing still. | "Realistic phone footage in a bedroom at night, filmed as a selfie at arm's length; her other hand is empty." |
 | `{SCENE}` | the place and its 3–5 main objects (up to 8 when the camera swings to new things), in the order they appear; no other people, no small details | "a bedroom with a white bed, a window with blinds and a desk lamp" |
 | `{FRAMING}` | how close, from where to where, and which parts of her body are in view, named as body parts (never what covers them) | "She is framed close from slightly above, from the top of her head to her chest; the view shows her face, her shoulders and one hand." |
 | `{MOVES}` | the facing sentence, then one sentence every half second (Moves) | |
@@ -163,6 +163,7 @@ Another person or outfit: a new sheet and her values written the same way (`--se
 
 ### Her face
 - Only from the face strips (her face every 1/4 s, times on the tiles); the dense strip where it changes fast.
+- Never a blink, and never her brows on their own: H3 holds a blink as a wink or closed eyes, and brows pulling or lifting as a squint. Write eyes only when they stay closed or wink.
 - Say her resting mouth at the start and whenever she goes back to it. Lips moving to the song with no word in `words.txt` (a held note, a hum): "her lips shape the note", no `<d>`.
 - An odd face is one that is not her resting face and, while she sings, not just the word's own mouth shape: a wink, a pout, a kiss, a lip bite, the tongue out, a smile, the mouth held wide open on a note. A shape held on two tiles or more is odd even when a word could make it. Seen on even one tile, write it in every half second it lasts (said once, it fades) and say where it ends; both in the same sentence when it lasts less than half a second. Shapes shorter than a tile: the dense strip (step 5). A shape with no end is held by H3 to the end of the video. The last anchor says the face she ends with.
 - Example: "(at 6.0 s) She looks at the lens, her lips pushed into a small, sudden pout. (at 6.5 s) Her pout held, she winks. (at 7.0 s) Her lips relax and close."
@@ -385,6 +386,7 @@ ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/parts.txt" -i "$CLIP" -ma
 3. Captions: the source had captions or lyric text that the render lost: ask "Put the captions back?". A yes, or the user asks: `video-captions.md`.
 
 ## Lessons (dated, evidence)
+- 2026-11-25 · Four half-second lines with "blinks slowly" or her brows pulling together or lifting gave a held wink or closed eyes at exactly those times; the mouth lines all landed. Medium (one clip).
 - 2026-11-25 · H3 starts the video with a silent sound track and took the clip's sound only as a reference: it invented her mouth timing and ran the camera 1 s early on a 12 s selfie, whatever the prompt. Forced audio put the mouth and the camera on the clip's times. Medium (3 clips, the owner's audit).
 - 2026-11-25 · With forced audio, a prompt with no times matched the half-second one on 2 clips but lost the pouts and winks on the third; a line only where a face starts and ends brought the winks back but left the pouts faint and put a hand move early. Her face and hands keep a sentence every half second; the camera needs no times. Medium (3 clips).
 - 2026-11-24 · A one-second pout written with no end was held for the whole 11 s video; written with its end, it ended. Strong (the owner's rule).
