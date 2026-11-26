@@ -29,7 +29,7 @@ Start from the defaults. Change one only for its scenario, and when you show the
 |---|---|
 | The user asks for the face only | face swap (step 1) |
 | Her eyes sit one above the other (head sideways) for more than half the clip | turn the clip upright, render it upright, turn the render back (step 1) |
-| The user asks to remove black bars | `cv_tools.bars` (step 1) |
+| The user asks to remove black bars | `video-remove-bars.md` first (step 1) |
 | A new outfit (character swap) | dress the sheet first with `image-outfit-swap.md`; only Qwen-dressed sheets |
 | She neither sings nor speaks | delete the lip-sync sentence (Her words) |
 | The user asks for her singing where she doesn't | keep the lip-sync sentence |
@@ -63,7 +63,7 @@ mkdir -p "$OUT/prompt"
      T=1   # 2 when the top of her head is at the picture right
      ffmpeg -nostdin -y -i "$CLIP" -vf transpose=$T -c:v libx264 -crf 12 -pix_fmt yuv420p -c:a copy "$OUT/upright.mp4"; CLIP="$OUT/upright.mp4"
      ```
-   - Bars, only when the user asks: `(cd "$CV" && .venv/bin/python -m cv_tools.bars --input "$CLIP" --output "$OUT/nobars.mp4"); CLIP="$OUT/nobars.mp4"`
+   - Bars, only when the user asks: `video-remove-bars.md` on `$CLIP`, then `CLIP="$OUT/bars/nobars.mp4"`
    - Then:
      ```bash
      LEN=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of csv=p=0 "$CLIP")
