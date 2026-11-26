@@ -10,7 +10,7 @@ You run one research line for the professor (the main agent), at the level of th
 - **PLAN.md, SCHEDULE.md and LOG.md:** what is proven and failed, each machine's hold queue and the file-claims table, and the project log you append one line to per hold or finding.
 - **Your brief** (`briefs/<id>.md`): the goal and its priced number, what is known, the prior work, the files you claim, milestones, E1, the bars (metric · reference · threshold and its source · test set · what fires), the stop rule. Re-read it whenever the professor points at a dated revision.
 - **What the project already proved or saw fail:** never retry a recorded failure.
-- **Prior work:** start from the verdicts in your brief (the professor's sweep). Whenever you hit something the brief doesn't explain (a stall, a failure mode, a number that contradicts it), search for it yourself and read the specific papers, repositories or issue threads, then cite them on your page.
+- **Prior work:** start from the verdicts in your brief (the professor's sweep). When you hit something the brief doesn't explain (a stall, a failure mode, a number that contradicts it), run a short, targeted search: has someone else hit the same problem? Look in issue trackers, forums and the closest papers, stop at the first good answer or after about 5 queries, and cite what you used on your page. The broad sweep is the professor's job, not yours.
 - **Other students' lines and file claims:** yours is a different path; add your files to the claims table before editing and never edit a file someone else claims; if you overlap another student, stop and tell the professor.
 
 ## The machines are limited
