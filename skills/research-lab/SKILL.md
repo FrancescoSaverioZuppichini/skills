@@ -1,56 +1,56 @@
 ---
 name: research-lab
-description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Pick novel, non-overlapping research lines, hand each to a research-student agent with a persona and a model, schedule the one limited machine, check every result yourself, steer, re-task or stop students, and clean up whatever works before it ships. It runs round after round (arXiv sweep newest year first, formulate, delegate, audit while running, conclude, next round) until the goal's number is reached. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
+description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Every round runs the same numbered steps: literature, measure and profile first, choose novel non-overlapping lines, design the bars, brief research-student agents, schedule the limited machines, run cheapest-kill experiments, audit while they run, ship what works on every machine, close the round. Rounds repeat until the goal's number is reached. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
 ---
 
 # Research lab: you are the professor
 
 Students run the research. You choose the lines, hand them off, read every result yourself, steer, re-task or stop students, and turn what works into clean, shipped code. You never run the experiments, and you never report a student's claim without reading its result file.
 
-## The loop: round after round until the goal is reached
-
-1. **Research.** Sweep arXiv, newest year first (§2), plus the program's own PLAN.md: what is proven, what failed, what is parked.
-2. **Formulate.** Write one thesis per line, each with the number it moves and an E1 that can kill it (§2, §3).
-3. **Delegate.** Hand one line to one `research-student` (§4) and book the machine (§5).
-4. **Audit while it runs.** Read every result as it lands, and check claims and theses against the newest papers (§6). Then steer, re-task or kill. Don't wait for the student to finish.
-5. **Conclude the round.** Update PLAN.md (proven, failed, parked), the page's comparison table, and the lessons in memory (§8).
-6. **Next round.** Build the next lines from what this round taught, and go back to 1.
-
-The program ends only when the goal's number is reached or the owner stops it. Never stop after one round on your own. Each round gets its own literature sweep, because what a round taught changes what to look for.
-
 ## Words
 
-- **Owner:** the human who set the goal. **Research line:** one path to the goal, owned by one student. **Hold:** one booked slot of GPU time.
-- **PLAN.md:** the program: goal and baseline, what is proven, one entry per failure (so nobody retries it), the phases, who owns which line. Superseded entries move to `archive/`.
-- **Rules file** (`briefs/HOUSE.md`): what every student reads first: the machine rules, the page format and path, the project log.
-- **Brief** (`briefs/NAME.md`): one line's frozen plan. **SCHEDULE.md:** the GPU queue.
+- **Owner:** the human who set the goal. **Round:** one pass through the steps below. **Research line:** one path to the goal, owned by one student. **Hold:** one booked slot of a machine's GPU.
+- **PLAN.md:** the program: goal and baseline, what is proven, one entry per failure (so nobody retries it), what is parked, who owns which line. Superseded entries move to `archive/`.
+- **Rules file** (`briefs/HOUSE.md`): what every student reads first: machine rules, locks, the page path, the project log. **Brief** (`briefs/<id>.md`): one line's frozen plan. **SCHEDULE.md:** each machine's queue and the file claims.
+- **Dumps:** real intermediate tensors captured from one run on real inputs. **Ladder:** a sequence of tests ordered by cost.
 
-## 1. The goal and the files
+## The round, step by step
+
+Every round runs these steps in order. The program repeats rounds until the goal's number is reached or the owner stops it; never stop after one round on your own.
+
+1. **Goal and files** (round 1; later rounds update them).
+2. **Literature:** arXiv newest year first, then code and repos.
+3. **Measure before planning:** calibrate each machine, profile the baseline, dump real tensors.
+4. **Choose the lines:** priced from the profile, novel, different, few.
+5. **Design the bars,** before any experiment runs.
+6. **Write the briefs and spawn the students.**
+7. **Schedule the hardware:** price the round, critical path first.
+8. **Run the experiments:** every variant climbs its ladder until it dies or ships.
+9. **Audit while it runs:** steer, re-task, stop.
+10. **Ship what works:** clean code, gated on every machine.
+11. **Close the round** and start the next.
+
+## 1. Goal and files
 
 - The /goal is one sentence with a number and a baseline ("1,000 images a second at the same search quality as today's 91").
 - Create PLAN.md, the rules file, SCHEDULE.md and the live page (the `local-artifacts` skill), with the goal at the top of PLAN.md and of the page.
-- The rules file names the GPU-lock command, the CPU guard that refuses to start (and stops) CPU work while a hold runs, the files frozen during a hold (edits go to a copy, swapped between holds, new hashes in the project log), and the log path. The measurement rules live in the student's agent file; do not restate them.
+- The rules file names, per machine:
+  - the GPU-lock command and the CPU guard that stops CPU work during a hold;
+  - the files frozen during a hold (edits go to a copy, swapped between holds);
+  - the log path.
+
+  The measurement rules live in the student agent file; do not restate them.
 - Every line must move the goal's number, or it stops.
 
-## 2. Choose the lines: novel, different, few
+## 2. Literature
 
-- **arXiv first, newest year first: mandatory.**
-  - Before you formulate a thesis or hand off a line, search arXiv for the current year, then the year before. Use WebSearch in extended mode, then open the abstract or HTML page of every paper you cite.
-  - After arXiv, search repos, model cards and issue trackers. Use at least 5 queries in total.
-  - List each find with its arXiv id, date, link and a verdict: reuse, already failed, contradicts, or gap. Put the list in the brief.
-  - You may split a wide sweep across several students, one topic cluster each. You still read the abstracts of the papers that decide a line yourself.
-  - If novelty stays unclear, mark it so: the student's first milestone is to search further and validate.
-### How to search the literature (every round, before any thesis)
+Before any thesis, every round: what this round taught changes what to look for. A web search ranks by popularity and misses this month's papers, so query arXiv's own API, newest first.
 
-A web search engine ranks by popularity, so it misses this month's papers. Query arXiv's own API, sorted by submission date, newest first.
-
-1. **Write 15–25 queries from the thesis.** Use its terms and their synonyms in three groups:
-   - the symptom ("small objects", "fine detail", "motion blur");
-   - the mechanism ("high-frequency", "token budget", "RoPE", "latent upsampling");
-   - the setting ("video diffusion", "few-step", "reference-to-video", "video editing").
-
-   Combine one term from each group per query.
-2. **Run them through the API, newest first, with a date window.** Current year first, then the year before.
+1. **Write 15–25 queries** from the thesis, one term from each of three groups per query:
+   - the symptom ("small objects", "motion blur");
+   - the mechanism ("high-frequency", "token budget", "RoPE");
+   - the setting ("video diffusion", "few-step").
+2. **Run them newest first, current year, then the year before:**
 
    ```sh
    curl -s -G "https://export.arxiv.org/api/query" \
@@ -58,16 +58,14 @@ A web search engine ranks by popularity, so it misses this month's papers. Query
      --data-urlencode sortBy=submittedDate --data-urlencode sortOrder=descending --data-urlencode max_results=40
    ```
 
-   - **Field prefixes:** `ti:` (title), `abs:` (abstract), `au:` (author), `cat:` (category, e.g. `cat:cs.CV`, `cat:cs.LG`), `all:` (everything).
-   - **Phrases** go in double quotes.
-   - **Booleans** are `AND`, `OR`, `ANDNOT`; group with parentheses.
-   - **Dates** go in `submittedDate:[YYYYMMDDHHMM TO YYYYMMDDHHMM]`.
-   - **Paging:** `start=40` gives the next page.
-   - **Rate limit:** one request every 3 seconds.
-   - **Use `curl -G --data-urlencode`.** Python's urllib can fail on HTTPS certificates on macOS.
-3. **Parse and save.** Each Atom `<entry>` has `<id>` (the arXiv id), `<published>`, `<title>` and `<summary>` (the abstract).
-   - Deduplicate across queries.
-   - Save the round's hits to `literature/round-N.json` in the program folder, with the query that found each one, so the next round only reads what is new.
+   - **Field prefixes:** `ti:`, `abs:`, `au:`, `cat:` (`cat:cs.LG`), `all:`.
+   - **Syntax:** phrases in double quotes; `AND`, `OR`, `ANDNOT` with parentheses; dates as `submittedDate:[YYYYMMDDHHMM TO YYYYMMDDHHMM]`.
+   - **Paging:** `start=40`.
+   - **Rate limit:** one request every 3 s. On HTTP 429, use arxiv.org's search page and Semantic Scholar instead of waiting.
+   - **Client:** use `curl -G --data-urlencode` (Python's urllib can fail on HTTPS certificates on macOS).
+3. **Parse and save:**
+   - Each Atom `<entry>` has `<id>`, `<published>`, `<title>` and `<summary>`.
+   - Deduplicate, and save to `literature/round-N.json` with the query that found each hit, so the next round only reads what is new.
 
    ```python
    import subprocess, xml.etree.ElementTree as ET
@@ -80,28 +78,39 @@ A web search engine ranks by popularity, so it misses this month's papers. Query
        date, title = e.find("a:published", ns).text[:10], " ".join(e.find("a:title", ns).text.split())
        abstract = " ".join(e.find("a:summary", ns).text.split())
    ```
-4. **Triage in three passes.**
-   - Read the titles and keep the candidates.
-   - Read their abstracts (the `<summary>` field).
-   - For the papers that decide a line, open the full HTML at `https://arxiv.org/html/<id>` to get the method, the numbers, the limitations, and whether it is training-free.
-   - To fetch known papers by id: `curl -s -G "https://export.arxiv.org/api/query" --data-urlencode "id_list=2511.19778,2610.05816"`.
-5. **Follow the citations forward.** Newer work that builds on a deciding paper often beats it:
+4. **Triage in three passes:** titles, then abstracts, then the full HTML (`https://arxiv.org/html/<id>`) of the papers that decide a line: method, numbers, limits, training-free or not. Known ids: `--data-urlencode "id_list=2511.19778,2610.05816"`.
+5. **Follow citations forward:** newer work that builds on a deciding paper often beats it.
 
    ```sh
    curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:2511.19778/citations?fields=title,year,externalIds&limit=100"
    ```
-6. **Check code and weights.** Look for the GitHub link in the abstract or HTML, the project page, and Hugging Face. Then run WebSearch in extended mode for what arXiv doesn't hold: repos, model cards, issue trackers, community nodes, user reports.
-7. **Write the verdicts.** In the brief and PLAN.md, record one row per paper: arXiv id, date, link, one-line method, the number that matters, code yes or no, and a verdict (reuse / already failed / contradicts / gap).
+6. **Check code, weights and other engines:** GitHub links, project pages, Hugging Face, issue trackers. Then use WebSearch in extended mode for what arXiv doesn't hold.
+7. **Write the verdicts:** one row per paper or project in the brief and PLAN.md: id, date, link, one-line method, the number that matters, code yes or no, verdict (reuse / already failed / contradicts / gap).
 
-- **Different.** No two lines take the same path or touch the same code. Before spawning, compare the new line with the running ones; merge or drop overlaps.
-- **Reuse first.** When something published already solves part of a line, the line becomes "adopt and measure".
-- **Few, in phases.** Usually 3 to 5 lines at once. Build and measure phases come first and skip the novelty search; improvement and novelty phases need it. Start a phase only when the previous one has its answer; park later ideas in PLAN.md.
+A wide sweep can be split across students, one topic cluster each. You still read the abstracts that decide a line yourself.
 
-## 3. Write the brief and its bars
+## 3. Measure before planning
 
-The line's goal and number, what is already known (numbers, paths, links), the prior-work list (arXiv first, newest year first, each with a verdict), milestones, E1 = the cheapest test that can kill the line, its bars, the quick-test size, the stop rule, and what to report. A brief you hand over is approved; the student stops only at the points its agent file lists.
+The round's first holds measure; nothing is planned from guesses.
 
-Write each round's bars before the first run and freeze them. Every bar names five things: **metric · reference · threshold and where it comes from · test set · what happens when it fires**. Three examples:
+1. **Calibrate each machine:** an A/A run of the baseline, two runs of the same build, with clocks and power limit locked or at least recorded. Its spread is the noise every later threshold uses.
+2. **Profile the baseline:** time per kernel or stage, each against its own floor. The floor is bytes ÷ bandwidth for memory-bound work and operations ÷ peak for compute-bound work. Untraced timing gives the numbers; profilers attribute the time.
+3. **Dump once, replay many:**
+   - **Capture:** the real intermediate tensors (activations, caches, attention inputs and outputs, routing choices, latents) from one run on real inputs, with source and settings recorded.
+   - **Replay:** every later variant is tested on those dumps first, in seconds, without starting the full system: error against a high-precision reference, closeness to the current version, time at the real shapes.
+   - **Real over synthetic:** real dumps beat synthetic data even for timing, because routing, lengths and data-dependent formats change it.
+   - **Cleanup:** raw dumps are deleted when the round no longer needs them.
+
+## 4. Choose the lines
+
+- **Priced:** each line names the µs, MiB or quality points it can move. That number comes from the profile (the gap to the floor) or from first principles, never from hope.
+- **Novel:** check every idea against §2. When something published already solves part of it, the line becomes "adopt and measure". If novelty stays unclear, the student's first milestone is to search further and validate.
+- **Different:** no two lines take the same path or edit the same files. Before spawning, compare a new line with the running ones; merge or drop overlaps.
+- **Few, in phases:** usually 3 to 5 lines at once. Build-and-measure phases come first and skip the novelty search; improvement phases need it. Start a phase only when the previous one has its answer; park later ideas in PLAN.md.
+
+## 5. Design the bars
+
+Write every bar before the first run and freeze it; change it only by a dated revision. Every bar names five things: **metric · reference · threshold and where it comes from · test set · what happens when it fires**.
 
 | goal | bar | metric · reference | threshold (source) | test set · when it fires |
 |---|---|---|---|---|
@@ -114,79 +123,107 @@ Write each round's bars before the first run and freeze them. Every bar names fi
 
 - **A threshold comes from the goal or from physics** (bytes ÷ bandwidth, memory needed, the measured spread), never from a round number.
 - **The reference must be able to run.** Where none fits (a size only the new method reaches), use absolute checks plus the trend from where both run.
-- **Run every bar on the baseline first:** the baseline must pass a quality bar, and physics must allow a speed bar. "Within noise" means a measured A/A spread (two runs of the same build); a deterministic system has none.
+- **Run every bar on the baseline first:** the baseline must pass a quality bar, and physics must allow a speed bar. "Within noise" means the measured A/A spread; a deterministic system has none.
 - **Judge the method, not luck:** when the input changes the number (speculative acceptance, seeds, sampling), the bar uses the input-independent one (fixed seeds, fixed-token steps) and only reports the other.
-- **The pass bar is what ships; the kill bar ends the line.** The stop rule is the deliverable done or a kill bar fired. A hold count is a budget cap: hitting it means report and ask, not done.
-
-## 4. Spawn the students
-
-- Students are always the `research-student` agent type. Audits and cold reads use a fresh general-purpose agent. No other custom types.
-- Each spawn gets a persona fitting the line ("a senior OpenAI deep-learning engineer", "a senior GPU kernel engineer") and a model: Sonnet for well-specified experiment runs, Opus at effort high for hard or open-ended lines.
-- The spawn prompt says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing.
-
-## 5. Schedule the hardware
-
-- **Price the round before it starts:** GPU hours per machine for each line. The busiest machine sets the round's length; say the estimate, and cut or reorder until it is acceptable.
-- **Critical path first.** Side lines pause when they compete for the critical machine; they keep their context and resume later.
-- **Dump once, replay many.** The first GPU hold of a round captures the real intermediate tensors from one run on real inputs (activations, caches, attention inputs and outputs, routing choices, latents), with the source and settings recorded. Every later variant is tested on those dumps first, in seconds, without starting the full system: error against a high-precision reference, closeness to the current version, time at the real shapes. For speed a replay can kill but never prove: a kernel slower alone is not faster in the system, while one faster alone can still slow the real step (cache contention, extra launches, competing streams), so survivors get one end-to-end run on real inputs. Real dumps beat synthetic data even for that first screen, because routing, lengths and data-dependent formats change the timing. Raw dumps are deleted when the round no longer needs them.
-- **CPU before GPU.** Whatever dumps, code or arithmetic can decide is decided there. Builds happen outside holds.
-- **Holds:** one at a time per machine, ≤ 15 minutes, their length stated in SCHEDULE.md, stopped as soon as the question is answered. A round's first hold on each machine calibrates its noise (A/A of the baseline, clocks and power locked or recorded; measurement rules in the student agent file). One A/B for a big effect; A/B/A/B only for small ones; the full benchmark only for final tables. When a hold ends, the next ready student gets the GPU at once: an idle GPU is your failure.
-- **Cheapest kill first.** Every lever or variant climbs a ladder of tests ordered by cost and stops at the rung where it dies; that rung and the measured reason fill its cell. Examples:
-
-  | question | rung 1 (seconds) | rung 2 (minutes) | rung 3 (only survivors) |
-  |---|---|---|---|
-  | is a kernel change faster? | microbenchmark of that kernel at the real shapes | `--quick` end-to-end A/B | full benchmark |
-  | does a compression format keep quality? | CPU replay on dumped tensors | short input end to end vs the reference | long input + the full quality suite |
-  | does a variant fit in memory? | one load attempt at the target size | one full-length input | quality runs |
-  | does a video or image pipeline change break outputs? | 2 seconds of one clip at few steps, checked for gross defects | the 5-clip set at full steps | full-length renders |
-
-- **Pay expensive setup once:** one long input carries all the probes (read once, questions asked through the prefix cache), one model load serves several variants, and a scaled-down input tests the pipeline before the full size.
-- **Two or more different machines:**
-  - What depends on the machine (speed, memory, kernel tuning) is measured on each one. Everything else (correctness tests, quality screening, data dumps, functional runs) goes to whichever machine is free and faster.
-  - Each machine has its own lock, queue, baseline and log. A student may book on either, but holds one at a time.
-  - A change that lands on one machine is gated on the other before it merges. When they disagree, both paths stay in one code base, picked at runtime by a hardware property (cache size, core count, supported number formats) or a measured per-machine table, each gated on its own machine.
-
-## 6. Check, steer, re-task, stop
-
-- Check at every student notification, and between them on a timer (a CronCreate job every 5 minutes, or a Monitor on SCHEDULE.md and the project log): the queue, the result folders, each student's "Now:" block.
-- **Audit against the literature: mandatory.** When a student reports a finding, proposes a thesis, or a line is about to be called done, check it against arXiv, newest year first, before you accept it.
-  - If it is already published, the line becomes "adopt and measure", and the page cites the paper.
-  - If a paper contradicts it, re-test before anything builds on it.
-  - Audit work done so far the same way: earlier conclusions in PLAN.md are re-checked when a newer paper touches them.
-- **Judge gross defects, not small scores.** The automatic judge looks only for clear, measurable failures of the task's output, each against the source, the baseline or a fixed check set. Write the list per task before the first run (examples by task in `example.md`):
+- **Kill on gross defects and physical limits only.** Write the defect list per task:
   - **video:** pose off, a missing or extra limb, the face lost, overlays painted in, big timing slips, visible joins;
   - **images:** a missing or extra object or finger, a broken face, garbled text, the subject not there;
   - **LLMs and text:** wrong answers on a fixed check set, broken output format, repetition loops, truncation;
   - **search and embeddings:** known pairs falling out of the top k, empty or duplicate results;
-  - **kernels and speed work:** outputs past a stated tolerance against the reference, crashes, OOM, a speed-up that isn't there.
+  - **kernels and speed work:** outputs past a stated tolerance against the reference, crashes, OOM.
 
-  A lever dies only for one of those, for a visible or obvious loss the owner confirms, or for no measured speed or memory gain (below twice the measured A/A spread) unless it makes the code simpler. Small exact gains are kept and stacked on one branch, each gated alone, the stack measured end to end: ten 1 % levers are 10 %. A gain too small to pay for the code it adds is a loss. Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1, top-1 between 90 and 100 %) are reported for ranking, never a verdict, so never set a kill bar on them (§3). A tight numeric bar that kills a working lever is a recurring failure.
-- Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
+  Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1, top-1 between 90 and 100 %) are reported for ranking, never a verdict. A tight numeric bar that kills a working lever is a recurring failure.
+- **Small exact gains stack:**
+  - **Keep** a lever if it is exact and measurably faster (≥ 2× the A/A spread), or simpler with no measured loss.
+  - **Kill** it if it is slower, changes bits it claimed to keep, or adds code its measured gain doesn't pay for.
+  - Winners stack on one branch, each gated alone, and the stack is measured end to end: ten 1 % levers are 10 %.
+- **The pass bar is what ships; the kill bar ends the line.** The stop rule is a deliverable done or a kill bar fired. A hold count is a budget cap: hitting it means report and ask, not done.
+
+## 6. Write the briefs and spawn the students
+
+- **The brief:**
+  - the line's goal and its priced number;
+  - what is known (numbers, paths, links) and the prior-work list with verdicts;
+  - the files the student claims;
+  - milestones, E1 (the cheapest test that can kill the line, usually a replay on the dumps), and the bars from §5;
+  - the stop rule and what to report.
+
+  A brief you hand over is approved; the student stops only at the points its agent file lists.
+- **Students** are always the `research-student` agent type; audits and cold reads use a fresh general-purpose agent. Each spawn gets:
+  - a persona fitting the line ("a senior OpenAI GPU kernel engineer");
+  - a model: Sonnet for well-specified measurement runs, Opus at effort high for open-ended or hard lines;
+  - an id `S<round>-<nn>`, in spawn order within the round, never reused or renumbered, used everywhere (page, PLAN.md, SCHEDULE.md, log lines, card ids).
+- **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing.
+- **File claims:** a student adds a row to SCHEDULE.md before editing code, and never edits a file someone else claims.
+- **No click prompts:** the rules file tells students to quote paths as `"${P:?}"/x` or write them literally, and to prefer script files over long one-liners. `rm`/`mv` on an unquoted or possibly-empty variable path, `rm -rf` on globs or `~`, and `curl | sh` stop for the owner's approval, and a prompt the owner has to answer is a bug in the student's command.
+
+## 7. Schedule the hardware
+
+- **Price the round before it starts:** GPU hours per machine for each line. The busiest machine sets the round's length; say the estimate, and cut or reorder until it is acceptable.
+- **Critical path first:** side lines pause when they compete for the critical machine; they keep their context and resume later.
+- **CPU before GPU:** whatever dumps, code or arithmetic can decide is decided there. Builds happen outside holds.
+- **Holds:** one at a time per machine, ≤ 15 minutes, their length stated in SCHEDULE.md, stopped as soon as the question is answered. When a hold ends, the next ready student gets the GPU at once: an idle GPU is your failure.
+- **Pay expensive setup once:** one long input carries all the probes (read once, questions asked through the prefix cache); one model load serves several variants; a scaled-down input tests the pipeline before the full size.
+- **Two or more different machines:**
+  - What depends on the machine (speed, memory, kernel tuning) is measured on each one. Everything else (correctness tests, replays, quality screening, functional runs) goes to whichever machine is free and faster.
+  - Each machine has its own lock, queue, baseline, noise calibration and log. A student may book on either, but holds one at a time.
+
+## 8. Run the experiments
+
+The hardware is the scarce resource, so run as few experiments as the decisions need.
+- **Only decisive experiments:** before a run, write what each possible outcome would make you do. If no outcome changes a decision, don't run it.
+- **Physics fills what it can:** a variant that cannot fit, or whose bytes per step already exceed the bar, gets its cell from the arithmetic or one load attempt, not a run.
+- **Each line has a hold budget** set from its price in §7. Repeats stop at what the measured noise requires.
+- **Reuse before rerunning:** a same-window baseline, a dump, or an earlier run of the same build answers the question.
+
+Every lever or variant climbs a ladder ordered by cost and stops at the rung where it dies. That rung and the measured reason fill its cell, so a kill is data, not a gap.
+
+| question | rung 1 (seconds) | rung 2 (minutes) | rung 3 (only survivors) |
+|---|---|---|---|
+| is a kernel change faster? | replay of that kernel on the dumps at the real shapes | quick end-to-end A/B | full benchmark |
+| does a compression format keep quality? | replay on the dumped tensors vs the high-precision reference | short input end to end vs the reference | long input + the full quality suite |
+| does a variant fit in memory? | one load attempt at the target size | one full-length input | quality runs |
+| does a video or image pipeline change break outputs? | 2 seconds of one clip at few steps, checked for gross defects | the 5-clip set at full steps | full-length renders |
+
+- **A replay can kill but never prove speed.** A kernel slower alone is not faster in the system. One faster alone can still slow the real step (cache contention, extra launches, competing streams), so every survivor gets one end-to-end run on real inputs before any verdict.
+- **Full protocol for finalists only:** the one or two variants that reach the last rung get the same complete protocol on every machine. The matrix per machine has every cell filled with a measurement, or with the rung, arithmetic or load attempt that ended the variant.
+- **One A/B for a big effect,** A/B/A/B interleaved in random order for small ones; the full benchmark only for final tables. The measurement standard (warm-up, untraced timing, spread, machine fingerprint) is in the student agent file.
+
+## 9. Audit while it runs
+
+- Check at every student notification, and between them on a timer (a CronCreate job every 5 minutes, or a Monitor on SCHEDULE.md and the project log): the queues, the result folders, each student's "Now:" block.
+- **Read the result file before you relay any claim,** and open every image or plot yourself.
+- **Audit against the literature:** when a student reports a finding or a line is about to be called done, check it against arXiv, newest year first. If it is already published, the line becomes "adopt and measure" and the page cites the paper. If a paper contradicts it, re-test before anything builds on it.
+- **Every student pays rent.** Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings), then steer it, give it something new, or stop it when it adds nothing, overlaps another line, or its kill bar fired. Stop leftover background waiters too.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
-- Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.
+- Ask the owner only for decisions that are theirs (quality trade-offs, budget, model switches, exceptions), with your recommendation first.
 
-## 7. Clean up what works
+## 10. Ship what works
 
-- A winning lever is not done until its code is clean. Spawn a fresh general-purpose agent to audit it: it reads every file on the path (the code, not your conclusions) against the owner's code rules (the `unslop` skill) and, for speed goals, the memory path end to end (every copy, allocation, conversion, sync and loop).
-- Hand the findings to the student who owns the code, with a lines-of-code budget, and re-measure after the cleanup.
+- **Clean before done:** a fresh general-purpose agent audits a winning lever. It reads every file on the path (the code, not your conclusions) against the owner's code rules (the `unslop` skill) and, for speed goals, the memory path end to end. The owning student fixes the findings within a lines-of-code budget, then re-measures.
+- **Every machine before merge:** a change that lands for one machine is gated on every other machine before it merges (bits, references, benchmark).
+- **Per-machine paths:** faster on all machines → one path. Faster on one, slower on another → both paths stay in one code base, picked at runtime by a hardware property (cache size, core count, supported number formats) or a measured per-machine table, each path gated on its own machine. Never fork the code per machine.
+- **The PR** lists every change, its gates and benchmarks per machine, and which machine runs which path. The owner merges.
 
-## 8. Results
+## 11. Close the round
 
-- One live page, in the format the rules file sets. Default: the goal and baseline, the one comparison table (you update it when a number lands, with the hold and time it came from), a notes list of everything known, then one mini paper per research line.
-- **Every student gets an id `S<round>-<nn>` at spawn:** `S1-01` is round 1's first student, `S2-01` round 2's first new one, in spawn order within the round. A student who carries on into a later round keeps their original id. Ids are never reused or renumbered, and they are the student's name everywhere: the page, the index, PLAN.md, SCHEDULE.md, LOG.md lines, card ids and save prefixes.
-- **Each student's section is exactly one mini paper, and its title starts with the id:** `📄 S1-03 · <student> · <question or claim> <✅/❌/⏳>`. Body: Now (2 lines), Abstract, Thesis + kill bar, What we did, Results (every card with wall time, speed and memory), What it means, Details. Logs and planning go to the log file, not the page.
-- **The page opens with an index section**, before anything else: one line linking the watch-first, program and survey sections, then one block per student paper, in id order, in Markdown (not a table): `### 📄 S<round>-<nn> · [student](link to their section): short title`, then `**Question:**` in one sentence, `**Result so far:**` in one sentence with the headline number, and the GPU or machine plus the model in italics. Add a block the moment you spawn a student, and update its result line when a number lands.
-- **Right under the index: a "watch first" section** with the latest full-length outputs side by side. Each one carries its wall time and its speed (render seconds per output second). Results never hide in a folded section.
-- **Students never make the owner click.** Claude Code's safety checks stop some shell commands even in bypass mode: `rm`/`rmdir`/`mv`/`find -delete` on an unquoted or possibly-empty variable path, `rm -rf` on globs or `~`, `curl | sh`. Every brief and the rules file say: quote paths as `"${P:?}"/x` or use literal paths, and prefer script files over long one-liners. A prompt the owner has to answer is a bug in the student's command.
-- **Compare only within one machine.** Speed and quality comparisons are made between arms on the same hardware, and when bits matter, on the same server process: a restart alone can change the bits. Each machine has its own baseline of the same job. Every row of the comparison table names its GPU.
-- **Status words are plain:** `running`, `finished · student idle (can be woken up)`, `stopped (why)`. Never lab jargon like "parked" or "line done".
-- **Several machines** (scheduling in §5): every result names its machine, and each machine gets its own row in the index.
-- When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context, that reads the page as a computer-science graduate outside the field and lists everything missing, unexplained, oddly worded or strange (a term never defined, a number without its unit or baseline, a figure without a caption, English that reads badly). Hand the list to the authors, fix, and repeat until nothing serious is left.
+- Update PLAN.md (proven, failed with the measured reason, parked), the page's comparison table and index, and the round's literature file.
 - Save owner decisions and durable lessons in memory, not details the files already hold.
+- When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context. It reads the page as a computer-science graduate outside the field and lists everything missing, unexplained or badly worded (a term never defined, a number without its unit or baseline, a figure without a caption). Fix the page and repeat until nothing serious is left.
+- Then build the next round's lines from what this one taught, and go back to step 2.
 
-### The index section (always, first on the page)
+## The page
 
-A full example page (index, watch first, program, one mini paper) is in `example.md` next to this file.
+One live page, in the format the rules file sets (default: the `local-artifacts` skill). A full example is in `example.md` next to this file. The order is fixed:
+
+1. **Index**, first: one line linking the watch-first, program and survey sections, then one block per student in id order, written in Markdown (not a table). Add a block the moment you spawn a student; rewrite its result line when a number lands.
+2. **Watch first:** the latest full-length outputs side by side, each with its wall time and speed.
+3. **Program:** goal, baseline, the comparison table (one per machine; every row names its machine), notes.
+4. **One mini paper per student:** title `📄 S1-03 · <student> · <claim> <✅/❌/⏳>`; body Now (2 lines), Abstract, Thesis + kill bar, What we did, Results (every card with wall time, speed and memory), What it means, Details.
+
+- **Compare only within one machine,** and when bits matter, within one server process: a restart alone can change the bits.
+- **Results never hide:** killed lines stay with ❌, and nothing sits in a folded section.
+- **Status words are plain:** `running`, `paused (why)`, `finished`, `stopped (why)`.
 
 ```mdx
 <Section id="index" title="Index · N students, N mini papers" open>
@@ -195,16 +232,11 @@ A full example page (index, watch first, program, one mini paper) is in `example
 ### 📄 S1-01 · [student-a](<link>#student-a): short title
 **Question:** the one question this student's paper answers.
 **Result so far:** one sentence with the headline number (or "running: …").
-*GPU or machine · model*
-
-### 📄 S1-02 · [student-b](<link>#student-b): short title
-**Question:** …
-**Result so far:** …
-*GPU or machine · model*
+*machine · model*
 
 ---
 **Scheduling:** one line on which machine does what.
 </Section>
 ```
 
-Take `<link>` from `/api/check`'s `links`. Keep one block per student, in the order the owner should read them, and rewrite a block's result line the moment its number lands.
+Take `<link>` from `/api/check`'s `links`.

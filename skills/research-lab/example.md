@@ -28,7 +28,7 @@ order: newest-first
 *CPU · Sonnet*
 
 ---
-**Scheduling:** the fast GPU is production (full-length runs, winners). The slow GPU is the bench (5 s A/B tests against its own 5 s baseline).
+**Scheduling:** speed and memory numbers on each GPU against its own baseline; replays, quality screening and full-length checks on whichever GPU is free and faster; every change gated on both GPUs before it merges.
 </Section>
 
 <Section id="watch" title="▶ Watch first · full-length renders" open>
