@@ -97,9 +97,24 @@ A web search engine ranks by popularity, so it misses this month's papers. Query
 - **Reuse first.** When something published already solves part of a line, the line becomes "adopt and measure".
 - **Few, in phases.** Usually 3 to 5 lines at once. Build and measure phases come first and skip the novelty search; improvement and novelty phases need it. Start a phase only when the previous one has its answer; park later ideas in PLAN.md.
 
-## 3. Write the brief
+## 3. Write the brief and its bars
 
-The line's goal and number, what is already known (numbers, paths, links), the prior-work list (arXiv first, newest year first, each with a verdict), milestones, E1 = the cheapest test that can kill the line, pass and kill bars, the quick-test size, the stop rule (when to stop and report, for example after E3 or after 3 holds), and what to report. A brief you hand over is approved; the student stops only at the points its agent file lists.
+The line's goal and number, what is already known (numbers, paths, links), the prior-work list (arXiv first, newest year first, each with a verdict), milestones, E1 = the cheapest test that can kill the line, its bars, the quick-test size, the stop rule, and what to report. A brief you hand over is approved; the student stops only at the points its agent file lists.
+
+Write each round's bars before the first run and freeze them. Every bar names five things: **metric · reference · threshold and where it comes from · test set · what happens when it fires**. Example, a goal of 500K context on one 24 GB GPU at today's speed:
+
+| bar | metric and reference | threshold, and why | test set |
+|---|---|---|---|
+| memory (pass) | peak VRAM at `--max-ctx 500000`, absolute | ≤ card − 300 MiB headroom: the goal itself | one full-length prompt + reply |
+| speed (pass) | drafter-off decode at 500K vs drafter-off at 230K on the old format, same GPU, same window | ≥ 0.85×: the goal; bytes per step predict ~1.0× | the fixed benchmark rows |
+| no regression (pass) | every other benchmark row vs the baseline build, same window | ≤ 1 % slower: 5× the measured A/A spread (0.2 %) | the fixed benchmark rows |
+| quality (kill) | needles, answers, top-1 vs the 8-bit reference where it fits | a needle the reference retrieves is missed, loops or broken answers, top-1 < 90 % | needles at 10/50/90 % depth in code and prose; real long prompts read |
+
+- **A threshold comes from the goal or from physics** (bytes ÷ bandwidth, memory needed, the measured spread), never from a round number.
+- **The reference must be able to run.** Where none fits (a context only the new method reaches), use absolute checks plus the trend from where both run.
+- **Run every bar on the baseline first:** the baseline must pass a quality bar, and physics must allow a speed bar. "Within noise" means a measured A/A spread; a deterministic system has none.
+- **Judge the engine, not luck:** when the text changes the number (speculative acceptance, sampling), the bar uses the text-independent one (drafter off, fixed-token steps) and only reports the other.
+- **The pass bar is what ships; the kill bar ends the line.** The stop rule is the deliverable done or a kill bar fired. A hold count is a budget cap: hitting it means report and ask, not done.
 
 ## 4. Spawn the students
 
@@ -126,7 +141,7 @@ The line's goal and number, what is already known (numbers, paths, links), the p
   - **search and embeddings:** known pairs falling out of the top k, empty or duplicate results;
   - **kernels and speed work:** outputs past a stated tolerance against the reference, crashes, OOM, a speed-up that isn't there.
 
-  A lever dies only for one of those, for a visible or obvious loss the owner confirms, or for no speed or memory gain. Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1) are never a verdict, so never set a kill bar on them. A tight numeric bar that kills a working lever is a recurring failure.
+  A lever dies only for one of those, for a visible or obvious loss the owner confirms, or for no speed or memory gain. Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1, top-1 between 90 and 100 %) are reported for ranking, never a verdict, so never set a kill bar on them (§3). A tight numeric bar that kills a working lever is a recurring failure.
 - Every student pays rent. Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings) and do one of three things: steer it, give it something new when its line is promising, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Write each steer into the brief as a dated revision, then send one message pointing at it, so a restarted student still has it.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, exceptions), with your recommendation first.

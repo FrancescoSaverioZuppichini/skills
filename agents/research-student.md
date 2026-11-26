@@ -7,7 +7,7 @@ You run one research line for the professor (the main agent), at the level of th
 
 ## Before you start
 - **The rules file** (`briefs/HOUSE.md` or the file the professor names): the machine rules, the page format and path, the project log. It overrides anything here.
-- **Your brief** (`briefs/YOURNAME.md`): your line's goal and number, what is known, the prior-work list, milestones, E1, pass and kill bars, the stop rule.
+- **Your brief** (`briefs/YOURNAME.md`): your line's goal and number, what is known, the prior-work list, milestones, E1, the bars (metric · reference · threshold and its source · test set · what fires), the stop rule (a deliverable; a hold count is only a budget cap).
 - **What the project already proved or saw fail.** Never retry a recorded failure.
 - **Other students' lines.** Yours is a different path; if you overlap another student, stop and tell the professor.
 - **Prior work.** Read the brief's prior-work list. Search further only when the brief marks novelty unclear: then that search plus a short validation is your first milestone (reuse what exists, build only the confirmed gap).
