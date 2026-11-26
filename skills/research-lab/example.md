@@ -34,16 +34,16 @@ order: newest-first
 <Section id="watch" title="▶ Watch first · full-length renders" open>
 <Gallery title="Full 15 s">
   <Media id="watch-src" src="in/source.mp4" title="Source" badges={["⏱ source, not generated"]} />
-  <Media id="watch-s01" src="out/windows-e2.mp4" title="S-01 windows · 1 MP" caption="In step until 10 s; join 2 fails." badges={["⏱ 371 s", "24.6 s per video s", "23.8 GB"]} compare="watch-src" />
+  <Media id="watch-s01" src="out/windows-e2.mp4" title="S1-01 windows · 1 MP" caption="In step until 10 s; join 2 fails." badges={["⏱ 371 s", "24.6 s per video s", "23.8 GB"]} compare="watch-src" />
 </Gallery>
 </Section>
 
 <Section id="program" title="Program · goal and scoreboard">
 **Goal:** a 15 s render at 1 MP, faster and with less memory than one pass, with no quality loss.
 
-| render | size | ⏱ | s per video s | VRAM | lag | identity | verdict |
-|---|---|---|---|---|---|---|---|
-| S-01 windows E2 | 768×1376 | 371 s | 24.6 | 23.8 GB | 2.5 / 15.6 | 0.697 | ⚠ join 2 |
+| render | machine | size | ⏱ | s per video s | VRAM | lag | identity | verdict |
+|---|---|---|---|---|---|---|---|---|
+| S1-01 windows E2 | fast GPU | 768×1376 | 371 s | 24.6 | 23.8 GB | 2.5 / 15.6 | 0.697 | ⚠ join 2 |
 </Section>
 
 <Section id="windows" title="📄 S1-01 · windows · Windows keep 1 MP 15 s renders in step ⏳">
@@ -66,18 +66,21 @@ order: newest-first
 **Rules this example shows:**
 - **Student ids** (`S1-01`, `S1-02`, … for round 1; `S2-01`, … for students new in round 2) are given at spawn and never reused. Every section title starts with the id.
 - **The index** has one `###` block per student, never a table, each with Question, Result so far, and GPU · model.
-- **Every render card** carries ⏱, s per video second and VRAM. Results never hide in a folded section.
+- **Every result card** carries its cost in the task's units (here ⏱, s per video second and VRAM; for training GPU hours and the final score; for a data job rows per second). Results never hide in a folded section.
+- **The index** lists students in id order; the mini papers below it put the newest results on top.
 
 ## Gross-defect judges for other kinds of research
 
 The page layout stays the same for any program. What changes is the output, the baseline and the defect list the judge checks. Write the list before the first run. Numbers like these are info, never a verdict: identity, sharpness, perplexity, a recall@10 move under a point.
 
-| program | output | baseline | gross defects the judge flags | dies only if |
+| program | output | baseline | gross defects the judge flags | dead if (otherwise only "not shipped") |
 |---|---|---|---|---|
 | Faster long-video generation | a 15 s video | the same job, dense, one 5 s run per GPU | pose off; a missing or extra limb; the face lost; guides or subtitles painted in; a move > 0.25 s early or late; a visible join | a defect, a visible loss on a side by side, or no speed-up |
 | Faster image model (e.g. fewer steps, int8) | 20 fixed prompts × 2 seeds | the original model, same prompts and seeds | the subject missing; extra fingers or limbs; broken faces; garbled text that the prompt asked to be clean | a defect on more images than the baseline has, or no speed-up |
 | LLM inference speed-up (e.g. quantization, speculative decoding) | answers to a fixed check set (100 Q&A, 20 JSON tasks) | the full-precision model on the same set | a wrong answer where the baseline is right; invalid JSON; repetition loops; truncation | more wrong answers than the baseline's run-to-run spread, or no tokens/s gain |
-| Faster embedding search | top-10 results for 200 known query → document pairs | the exact (brute-force) search | a known pair falling out of the top 10; empty or duplicate results | more pairs lost than an agreed small count, or no QPS / memory gain |
+| Faster embedding search | top-10 results for 200 known query → document pairs | the exact (brute-force) search | a known pair falling out of the top 10; empty or duplicate results | more pairs lost than the baseline's own count, or no QPS / memory gain |
+| Cheaper training recipe | held-out score and loss curves, 3 seeds | the current recipe, 3 seeds | NaN or divergence; loss spikes the baseline never shows; train/test leakage | held-out score below the baseline by more than the seed spread, or no GPU-hour saving |
+| Faster data pipeline | the output tables | the current pipeline's output on the same input | any row lost, duplicated or changed; schema changes; new nulls | any row-level difference, or no rows/s gain |
 | Custom GPU kernel | the output tensors | the reference kernel on the same inputs | max abs difference over the stated tolerance; NaN or Inf; crash or OOM at the target shapes | any of those, or slower than the reference |
 
 ### One index block per kind of student, so the page reads the same everywhere
