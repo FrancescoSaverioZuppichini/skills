@@ -124,10 +124,26 @@ Write each round's bars before the first run and freeze them. Every bar names fi
 - Each spawn gets a persona fitting the line ("a senior OpenAI deep-learning engineer", "a senior GPU kernel engineer") and a model: Sonnet for well-specified experiment runs, Opus at effort high for hard or open-ended lines.
 - The spawn prompt says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing.
 
-## 5. Run the GPU
+## 5. Schedule the hardware
 
-- Assume one shared GPU and shared CPU cores. Keep SCHEDULE.md current: one hold at a time, 10 to 15 minutes each, the next one marked NEXT.
-- When a hold ends, give the GPU to the next ready student at once. An idle GPU is your failure.
+- **Price the round before it starts:** GPU hours per machine for each line. The busiest machine sets the round's length; say the estimate, and cut or reorder until it is acceptable.
+- **Critical path first.** Side lines pause when they compete for the critical machine; they keep their context and resume later.
+- **CPU before GPU.** Whatever dumps, code or arithmetic can decide is decided there. Builds happen outside holds.
+- **Holds:** one at a time per machine, ≤ 15 minutes, their length stated in SCHEDULE.md, stopped as soon as the question is answered. One A/B for a big effect; A/B/A/B only for small ones; the full benchmark only for final tables. When a hold ends, the next ready student gets the GPU at once: an idle GPU is your failure.
+- **Cheapest kill first.** Every lever or variant climbs a ladder of tests ordered by cost and stops at the rung where it dies; that rung and the measured reason fill its cell. Examples:
+
+  | question | rung 1 (seconds) | rung 2 (minutes) | rung 3 (only survivors) |
+  |---|---|---|---|
+  | is a kernel change faster? | microbenchmark of that kernel at the real shapes | `--quick` end-to-end A/B | full benchmark |
+  | does a compression format keep quality? | CPU replay on dumped tensors | short input end to end vs the reference | long input + the full quality suite |
+  | does a variant fit in memory? | one load attempt at the target size | one full-length input | quality runs |
+  | does a video or image pipeline change break outputs? | 2 seconds of one clip at few steps, checked for gross defects | the 5-clip set at full steps | full-length renders |
+
+- **Pay expensive setup once:** one long input carries all the probes (read once, questions asked through the prefix cache), one model load serves several variants, and a scaled-down input tests the pipeline before the full size.
+- **Two or more different machines:**
+  - What depends on the machine (speed, memory, kernel tuning) is measured on each one. Everything else (correctness tests, quality screening, data dumps, functional runs) goes to whichever machine is free and faster.
+  - Each machine has its own lock, queue, baseline and log. A student may book on either, but holds one at a time.
+  - A change that lands on one machine is gated on the other before it merges. When they disagree, both paths stay in one code base, picked at runtime by a hardware property (cache size, core count, supported number formats) or a measured per-machine table, each gated on its own machine.
 
 ## 6. Check, steer, re-task, stop
 
@@ -163,7 +179,7 @@ Write each round's bars before the first run and freeze them. Every bar names fi
 - **Students never make the owner click.** Claude Code's safety checks stop some shell commands even in bypass mode: `rm`/`rmdir`/`mv`/`find -delete` on an unquoted or possibly-empty variable path, `rm -rf` on globs or `~`, `curl | sh`. Every brief and the rules file say: quote paths as `"${P:?}"/x` or use literal paths, and prefer script files over long one-liners. A prompt the owner has to answer is a bug in the student's command.
 - **Compare only within one machine.** Speed and quality comparisons are made between arms on the same hardware, and when bits matter, on the same server process: a restart alone can change the bits. Each machine has its own baseline of the same job. Every row of the comparison table names its GPU.
 - **Status words are plain:** `running`, `finished · student idle (can be woken up)`, `stopped (why)`. Never lab jargon like "parked" or "line done".
-- **Several machines:** each student always runs on the same machine. The fast machine is production: full-length runs and integrating winning levers. The slower one is the bench: short A/B tests of new levers against its own baseline of the same job. Each machine gets its own baseline, its own lock and its own queue in SCHEDULE.md, and its own row in the index.
+- **Several machines** (scheduling in §5): every result names its machine, and each machine gets its own row in the index.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context, that reads the page as a computer-science graduate outside the field and lists everything missing, unexplained, oddly worded or strange (a term never defined, a number without its unit or baseline, a figure without a caption, English that reads badly). Hand the list to the authors, fix, and repeat until nothing serious is left.
 - Save owner decisions and durable lessons in memory, not details the files already hold.
 
