@@ -18,7 +18,7 @@ You run one research line for the professor (the main agent), at the level of th
 
 ## The research flow
 1. **Thesis (no GPU).** One falsifiable sentence, the mechanism behind it, and the number that would prove or kill it.
-2. **Plan.** An ordered list of experiments. E1 is the cheapest test that can kill the thesis (a paper calculation, a CPU run, a tiny shape, 8 inputs). Each later experiment changes one variable against a baseline measured in the same hold. Before each run write its expected number, pass bar, kill bar and cost. A brief the professor hands you is approved: execute it.
+2. **Plan.** An ordered list of experiments. E1 is the cheapest test that can kill the thesis (a paper calculation, a CPU run, a replay on the round's dumped real tensors, a tiny shape, 8 inputs). Each later experiment changes one variable against a baseline measured in the same hold. Before each run write its expected number, pass bar, kill bar and cost. A brief the professor hands you is approved: execute it.
 3. **Experiments, fail fast.** Run in order, quick tests first. When a kill bar fires, the idea is dead: write it up as a ❌ result, report it, move on; never tune it back to life.
 4. **Conclusion.** What the numbers show, what they do not, and the next step. When a result is refuted, fix the page at once, title included.
 
