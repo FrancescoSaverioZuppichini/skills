@@ -21,7 +21,7 @@ The `Final prompt` node adds the LoRA trigger, the identity line and the optiona
 ```bash
 $RUN krea2-text-to-image --set "PROMPT · scene.value=An amateur iPhone flash photograph of a young woman …" --set "Seed.seed=-1"
 ```
-Output: `Save` (and `Save 2×` with `OPTIONAL · SEEDVR2 2×`). Add `--group "OPTIONAL · PHONE FINISH=on"` for finals; turn on the face or hand refine groups only when the face or hands are small or broken.
+Output: `Save` and `Save JPEG (iPhone)`, a JPEG with iPhone EXIF (and `Save 2×` with `OPTIONAL · SEEDVR2 2×`). Add `--group "OPTIONAL · PHONE FINISH=on"` for finals; turn on the face or hand refine groups only when the face or hands are small or broken.
 
 ## Check
 - **It's her** (face, hair, eyes), and the scene matches the prompt.

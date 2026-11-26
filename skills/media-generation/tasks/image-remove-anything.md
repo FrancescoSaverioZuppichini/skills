@@ -20,7 +20,7 @@
 ```bash
 $RUN qwen-remove-anything --set "1 · Picture + mask.image=@photo.png"
 ```
-Output: `output/remove-anything/clean`. The edit is cropped around the mask at 2 MP and stitched back.
+Output: `output/remove-anything/clean`, and a JPEG with iPhone EXIF in `output/remove-anything/phone`. The edit is cropped around the mask at 2 MP and stitched back.
 
 ## Check
 - **Every target is gone,** with no ghost outline.

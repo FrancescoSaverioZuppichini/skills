@@ -16,7 +16,7 @@
 ```bash
 $RUN nudenet-censor --set "Picture.image=@in.png" --set "Censor.style=blur"
 ```
-Output: `output/nudenet-censor/sfw`.
+Output: `output/nudenet-censor/sfw`, and the same picture as a JPEG with iPhone EXIF in `output/nudenet-censor/phone`.
 
 ## Check
 - **Every exposed part is covered,** including small ones; lower `confidence` if something is missed.

@@ -25,7 +25,7 @@ $RUN qwen-character-swap \
   --set "Clothes · off = from the character sheet · on = keep the photo's.switch=false" \
   --group "OPTIONAL · PHONE FINISH=on"
 ```
-Output: `output/char-swap/swap` (raw) and the phone-finished JPEG in `output/char-swap/`.
+Output: `output/char-swap/swap` (raw) and a JPEG with iPhone EXIF in `output/char-swap/phone` (phone-finished when that group is on).
 
 ## Check
 - **It's her:** the face, hair colour (medium chestnut-brown), eyes (warm brown).

@@ -24,7 +24,7 @@ $RUN qwen-outfit-swap \
   --set "Image 1 · the picture to dress (the canvas).image=@sheet.png" \
   --set "Image 2 · the outfit picture.image=@outfit.jpg"
 ```
-Output: `Save (with metadata)`. Turn on `8 · PHONE FINISH (optional)` only for finals, never for a sheet.
+Output: `Save (with metadata)` and `Save JPEG (iPhone)`, a JPEG with iPhone EXIF. Turn on `8 · PHONE FINISH (optional)` only for finals, never for a sheet.
 
 ## Check
 - **The outfit matches the picture:** cut, colour, material and length.

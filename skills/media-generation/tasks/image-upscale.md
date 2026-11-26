@@ -15,7 +15,7 @@
 ```bash
 $RUN seedvr2-upsample --set "Image to upscale.image=@in.png" --set "Scale (2 or 4) · lanczos stretch.resize_type.multiplier=2"
 ```
-Output: `output/seedvr2-upsample/out`.
+Output: `output/seedvr2-upsample/out`, and a JPEG with iPhone EXIF in `output/seedvr2-upsample/phone`.
 
 ## Check
 - **Same face and details,** sharper.

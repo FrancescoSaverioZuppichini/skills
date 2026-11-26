@@ -26,7 +26,7 @@ Size follows the reference (2 MP).
 ```bash
 $RUN krea2-clone-vibe --set "Reference photo.image=@reference.jpg"
 ```
-Output: `Save final` and `Save raw`; `Save phone finish` (the phone finish group is on).
+Output: `Save final` and `Save raw`; `Save phone finish`, a JPEG with iPhone EXIF (the phone finish group is on).
 
 ## Check
 - **Next to the reference:** same pose, framing, light and place.
