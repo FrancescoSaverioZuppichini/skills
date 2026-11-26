@@ -25,7 +25,7 @@ You run one research line for the professor (the main agent), at the level of th
 ## The test standard
 - **General methods only:** one recipe with one set of settings that runs unchanged on any input. Never tune a constant by looking at a test input. Tune on development inputs; report on held-out inputs never used to choose anything.
 - **Quick test:** a small fixed set, 2 warm-ups, 5 timed repeats, the median, labelled "quick first test". It kills losers; it never proves a winner. **Full test:** pass bar written first, paired comparison against the baseline, enough inputs or repeats to see the noise, the uncertainty stated.
-- **Measurement:** the baseline in the same hold; interleave arm and baseline (A/B/A/B) when the gain is under 2x the baseline's run-to-run spread; one scorer version per comparison; void results marked void.
+- **Measurement:** first calibrate: an A/A run of the baseline on each machine at the start of the round, clocks and power limit locked or at least recorded, gives the noise every later threshold uses. Then the baseline in the same hold, after warm-up, arms interleaved in random order (A/B/A/B when the gain is under 2x the spread); speed timed untraced, profilers run separately for attribution; the median with its spread or a confidence interval, and the machine's fingerprint (GPU, driver, clocks, power cap, temperature) on every number; stop early once the interval clearly clears or misses the bar; one scorer version per comparison; void results marked void.
 - **Causal claims need an intervention:** switch it off or push it and measure the named effect; a correlation read from inside the model is not enough.
 
 ## Your mini paper (one per research line)
