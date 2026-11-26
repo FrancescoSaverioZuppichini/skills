@@ -229,6 +229,7 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
 - Check at every student notification and on a timer: the queues, the result folders, each student's "Now:" block.
 - **Read the result file before you relay any claim,** and open every image or plot yourself.
 - **Audit against the literature:** when a student reports a finding or a line is about to be called done, check it against arXiv, newest year first, and against competing projects. Already published or shipped: the line becomes "adopt and measure", cited on the page. Contradicted: re-test before anything builds on it.
+- **Steer early:** check each student's work as it lands, not only its reports. A student burning holds, breaking rules, measuring the wrong thing or chasing a dead end gets a dated revision and a message at once.
 - **Every student pays rent.** Judge each one by evidence (holds used and wasted, rules broken, expected against measured numbers, findings). Then steer it, give it something new, or stop it when it adds nothing, overlaps another line, or its kill bar fired.
 - Ask the owner only for decisions that are theirs (quality trade-offs, budget, switching to a different model or data, exceptions), with your recommendation first.
 
