@@ -377,15 +377,22 @@ ffmpeg -nostdin -v error -y -f concat -safe 0 -i "$OUT/parts.txt" -i "$CLIP" -ma
 | Captions gone | put them back on request (`video-captions.md`) |
 
 ## After the render
-1. Turned upright: turn it back, `ffmpeg -nostdin -y -i <render> -vf transpose=<back> -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy <final>`.
-2. Light: measure the render against the clip on shot 1 (about 1 s; stderr prints the largest shift):
+1. Face swap: her skin. Tone her face to the clip's (about 1 min on the 4090; stderr prints the shift):
+   ```bash
+   (cd "$CV" && .venv/bin/python -m cv_tools.motion_guide --input "$CLIP" --output "$OUT/clip-masks" --mask-prompt person --color \
+     && .venv/bin/python -m cv_tools.color_match --source "$CLIP" --render <render> --masks "$OUT/clip-masks/masks.npz" --inside face --out "$OUT/$NAME-toned.mp4")
+   ```
+   Red or yellow 2 or more: show render | toned side by side and ask "Keep the toned face?". A yes: the toned file is the render from here on. Never on a character swap.
+2. Turned upright: turn it back, `ffmpeg -nostdin -y -i <render> -vf transpose=<back> -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a copy <final>`.
+3. Light: measure the render against the clip on shot 1 (about 1 s; stderr prints the largest shift):
    ```bash
    (cd "$CV" && .venv/bin/python -m cv_tools.color_match --source "$OUT/shot-1.mp4" --render <render> --masks "$OUT/guide-1/masks.npz" --end <shot 1 length> > /dev/null)
    ```
    25 levels or more on any channel: ask "Relight the render to the source? (largest shift r X, g Y, b Z)". A yes: `video-relight.md`.
-3. Captions: the source had captions or lyric text that the render lost: ask "Put the captions back?". A yes, or the user asks: `video-captions.md`.
+4. Captions: the source had captions or lyric text that the render lost: ask "Put the captions back?". A yes, or the user asks: `video-captions.md`.
 
 ## Lessons (dated, evidence)
+- 2026-11-26 · Her face toned to the clip's skin (`color_match --inside face`) sat right on the body of a face swap (makeup, red +3.5); on a character swap it turned her face redder than her own body (peek, red +10). Medium (2 clips, the owner's audit).
 - 2026-11-25 · Four half-second lines with "blinks slowly" or her brows pulling together or lifting gave a held wink or closed eyes at exactly those times; the mouth lines all landed. Medium (one clip).
 - 2026-11-25 · H3 starts the video with a silent sound track and took the clip's sound only as a reference: it invented her mouth timing and ran the camera 1 s early on a 12 s selfie, whatever the prompt. Forced audio put the mouth and the camera on the clip's times. Medium (3 clips, the owner's audit).
 - 2026-11-25 · With forced audio, a prompt with no times matched the half-second one on 2 clips but lost the pouts and winks on the third; a line only where a face starts and ends brought the winks back but left the pouts faint and put a hand move early. Her face and hands keep a sentence every half second; the camera needs no times. Medium (3 clips).
