@@ -186,6 +186,10 @@ Write every bar before the first run, have the measurement student run it on the
 ## 5. Cost the round and schedule the machines
 
 - **Cost before spawning:** the machine hours each line needs on each machine, from its ladder (step 7). The busiest machine sets the round's length. Say the estimate, then cut or reorder until it is acceptable, and give each line a **hold budget**.
+- **Tokens are a budget like machine hours:** say the round's token estimate and its model mix before spawning.
+  - Opus designs (round 1 of a program, a new line's design) and at most one or two leads per round, each closing at its milestone with a short handoff.
+  - Sonnet does everything else.
+  - If the round runs past its estimate, stop and re-plan instead of adding agents.
 - **Critical path first:** side lines pause when they compete for a critical machine. A paused student keeps its context and resumes by message.
 - **Never serialize what can run side by side:** start every job whose inputs exist now. Write the test, validation and benchmark scripts while the code they check is being written. Run the review during the work, not after it. Wire the integration the moment the last piece lands. A plan that is a chain of hand-offs, each waiting on the previous one, wastes hours of wall time.
 - **Side quests fill idle time:** when a machine would sit idle, a side quest with a small brief and its own bars takes the slot, and gives it back the moment the critical path needs it.
