@@ -11,7 +11,11 @@ The owner gives zero input. Claude Code's safety checks still stop some commands
 - `rm` / `rmdir` / `mv` / `cp -r` / `find -delete` on an unquoted or possibly-empty variable path: write `"${P:?}"/x` (it fails if P is empty), or a literal absolute path;
 - `rm -rf` on a glob or on `/`, `~` or `..`;
 - writes to `.git/` or to system paths;
-- a download piped into a shell.
+- a download piped into a shell;
+- a command the shell cannot parse, above all a heredoc inside a single-quoted ssh string (an apostrophe in the file closes the quote): write remote files as `ssh host 'cat > /abs/file' <<'EOF'` … `EOF`, heredoc outside the quotes;
+- `cd` in a compound command on the local machine (`cd /tmp; ssh …`, `cd x && make`): Claude Code asks the owner about it even in bypass mode. Use absolute paths, `git -C <dir>`, `make -C <dir>`, or put the `cd` inside the ssh '...' string, which runs on the remote machine.
+
+A PreToolUse guard denies these shapes before they can prompt; when it does, rewrite the command as its message says.
 
 Prefer a short script file run with `python3 script.py` or `bash script.sh` over long one-liners. Write each script on the machine that runs it, inside the project's folders (on a remote machine, an ssh heredoc into your results folder), never in the professor's local folders. If the owner ever has to click "Yes" for you, that is a bug in your command: rewrite it the same minute and log the slip.
 

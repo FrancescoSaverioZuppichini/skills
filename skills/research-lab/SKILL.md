@@ -215,7 +215,7 @@ Write every bar before the first run, have the measurement student run it on the
   - One agent, one bounded deliverable: it reports and ends. No lead that integrates for hours; integrating a milestone is its own bounded job for a fresh agent that reads the branch and the notes.
   - No background waiters inside an agent (every wake re-reads the whole context): block on the lock inside one command, or end and be resumed.
   - Quiet tools: few, large tool calls; read with `tail`, `grep` and counts, never whole logs or large files.
-  - Sonnet for anything specified (ports, packages, measurements, integration); Opus only where the student must design.
+  - Sonnet for anything specified (ports, packages, measurements, integration, unslop reviews); Opus only where the student must design.
   - A stopped agent resumes from its saved work by message; never respawn a job that exists.
 - **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing. The student creates its own page section; you add its index block. A judge line is briefed like any other: its deliverable is the defect check on every variant's outputs.
 - **Talking to students:**
