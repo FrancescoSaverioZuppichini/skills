@@ -1,6 +1,6 @@
 # Example lab page (page.mdx)
 
-This is the shape every lab page takes. It is a made-up program, "render a 15 s video swap at 1 MP, faster", with three students on two GPUs. The order is fixed: the index first, then "watch first", then the program, then one mini paper per student, newest results on top.
+This is the shape every lab page takes. It is a made-up program, "render a 15 s video swap at 1 MP, faster", with three students on two GPUs. The order is fixed: the index first, then "watch first", the program, the survey, then one mini paper per student, newest results on top (the front matter's `order: newest-first` tells the local-artifacts app to keep them that way). The numbers in it are illustrations, not rules.
 
 ```mdx
 ---
@@ -38,6 +38,12 @@ order: newest-first
 </Gallery>
 </Section>
 
+<Section id="survey" title="Survey · papers and competing projects">
+| id | date | method | number that matters | code | verdict |
+|---|---|---|---|---|---|
+| 2611.xxxxx | 2026-11 | block-sparse attention for video | 1.8× at 20 % density | yes | reuse → S1-02 |
+</Section>
+
 <Section id="program" title="Program · goal and scoreboard">
 **Goal:** a 15 s render at 1 MP, faster and with less memory than one pass, with no quality loss.
 
@@ -73,14 +79,14 @@ order: newest-first
 
 The page layout stays the same for any program. What changes is the output, the baseline and the defect list the judge checks. Write the list before the first run. Numbers like these are info, never a verdict: identity, sharpness, perplexity, a recall@10 move under a point.
 
-| program | output | baseline | gross defects the judge flags | dead if (otherwise only "not shipped") |
+| program | output | baseline | gross defects the judge flags (dead) | not shipped if |
 |---|---|---|---|---|
-| Faster long-video generation | a 15 s video | the same job, dense, one 5 s run per GPU | pose off; a missing or extra limb; the face lost; guides or subtitles painted in; a move > 0.25 s early or late; a visible join | a defect, a visible loss on a side by side, or no speed-up |
-| Faster image model (e.g. fewer steps, int8) | 20 fixed prompts × 2 seeds | the original model, same prompts and seeds | the subject missing; extra fingers or limbs; broken faces; garbled text that the prompt asked to be clean | a defect on more images than the baseline has, or no speed-up |
-| LLM inference speed-up (e.g. quantization, speculative decoding) | answers to a fixed check set (100 Q&A, 20 JSON tasks) | the full-precision model on the same set | a wrong answer where the baseline is right; invalid JSON; repetition loops; truncation | more wrong answers than the baseline's run-to-run spread, or no tokens/s gain |
-| Faster embedding search | top-10 results for 200 known query → document pairs | the exact (brute-force) search | a known pair falling out of the top 10; empty or duplicate results | more pairs lost than the baseline's own count, or no QPS / memory gain |
-| Cheaper training recipe | held-out score and loss curves, 3 seeds | the current recipe, 3 seeds | NaN or divergence; loss spikes the baseline never shows; train/test leakage | held-out score below the baseline by more than the seed spread, or no GPU-hour saving |
-| Faster data pipeline | the output tables | the current pipeline's output on the same input | any row lost, duplicated or changed; schema changes; new nulls | any row-level difference, or no rows/s gain |
+| Faster long-video generation | a 15 s video | the same job, dense, one 5 s run per GPU | pose off; a missing or extra limb; the face lost; guides or subtitles painted in; a move > 0.25 s early or late; a visible join | no speed-up |
+| Faster image model (e.g. fewer steps, int8) | 20 fixed prompts × 2 seeds | the original model, same prompts and seeds | the subject missing; extra fingers or limbs; broken faces; garbled text that the prompt asked to be clean | no speed-up |
+| LLM inference speed-up (e.g. quantization, speculative decoding) | answers to a fixed check set (100 Q&A, 20 JSON tasks) | the full-precision model on the same set | a wrong answer where the baseline is right; invalid JSON; repetition loops; truncation | no tokens/s gain |
+| Faster embedding search | top-10 results for 200 known query → document pairs | the exact (brute-force) search | a known pair falling out of the top 10; empty or duplicate results | no QPS or memory gain |
+| Cheaper training recipe | held-out score and loss curves, 3 seeds | the current recipe, 3 seeds | NaN or divergence; loss spikes the baseline never shows; train/test leakage | no GPU-hour saving |
+| Faster data pipeline | the output tables | the current pipeline's output on the same input | any row lost, duplicated or changed; schema changes; new nulls | no rows/s gain |
 | Custom GPU kernel | the output tensors | the reference kernel on the same inputs | max abs difference over the stated tolerance; NaN or Inf; crash or OOM at the target shapes | any of those, or slower than the reference |
 
 ### One index block per kind of student, so the page reads the same everywhere

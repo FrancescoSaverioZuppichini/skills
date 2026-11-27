@@ -12,13 +12,14 @@ Students run the research. You choose the lines, write their briefs, read every 
 - **Owner:** the human who set the goal. **Round:** one pass through the steps below.
 - **Line:** one path to the goal, owned by one student. A **support line** (measurement, a quality judge) moves no number itself but serves the lines that do.
 - **Lever** or **variant:** one concrete change a line tests (a kernel, a format, a setting).
-- **Hold:** one booked slot of a machine's scarce resource (a GPU, or the CPUs, disk or network a job saturates).
-- **Price:** what a lever can move (µs, MiB, quality points), from a measurement or first principles. **Cost:** the GPU time an experiment or a line needs.
+- **Hold:** one booked slot, ≤ 15 minutes, of a machine's scarce resource (a GPU, or the CPUs, disk or network a job saturates). A **hold budget** is a number of holds.
+- **Price:** what a lever can move (µs, MiB, quality points), from a measurement or first principles. **Cost:** the machine time an experiment or a line needs.
 - **Critical path:** the lines the round's goal waits on; a **side line** is everything else.
-- **A/A spread:** the noise of a measurement. Run the baseline 3 times in one window; the spread is (max − min) / median of the 3 results, in %. For a long training run it is the spread across 3 seeds; for a deterministic job's outputs it is zero, so its bar is an exact diff.
-- **Same window:** the same hold or back-to-back holds on one machine, with no reboot, driver, clock-setting or build change in between.
+- **A/A spread:** the noise of a measurement. Run the baseline 3 times in one window; the spread is max − min of the 3 results, in the metric's units (or as a % of their median). For a long training run it is the spread across 3 seeds; for a deterministic job's outputs it is zero, so its bar is an exact diff.
+- **Same window:** within one hold, or one student's consecutive holds on one machine, with no reboot, driver, clock-setting or build change in between.
 - **Dumps:** real intermediate data captured from one run on real inputs (tensors, batches, checkpoints, sampled rows, query logs). **Ladder:** a sequence of tests ordered by cost.
-- **Pass bar:** what a variant must meet to ship. **Kill bar:** what ends a variant at once. A variant below its pass bar is "not shipped"; one that hits a kill bar is "dead".
+- **Pass bar:** what a variant must meet to ship; below it, the variant is "not shipped" (no gain, too slow, does not fit). **Kill bar:** a gross defect or a physical limit; hitting it makes the variant "dead" at once.
+- **E1:** a line's first experiment, the cheapest test that can kill it.
 - **Finalist:** a variant that survived every rung of its ladder. **Matrix:** one table per machine, a row per variant, a column per measurement in the protocol.
 
 ## The files
@@ -37,6 +38,7 @@ Students run the research. You choose the lines, write their briefs, read every 
 
 **One home per fact:**
 - numbers live in result files, and the page shows them;
+- literature verdicts live in `literature/` and the page's Survey section; PLAN.md cites only those that decide a line;
 - decisions and failures live in PLAN.md;
 - the queue and file claims live in SCHEDULE.md;
 - events live in LOG.md.
@@ -51,7 +53,7 @@ Superseded entries are deleted, not archived: version control keeps the history.
 - how a stale lock is cleared;
 - the disk budget for dumps.
 
-It also holds the page path, with the page instructions copied in (students have no skill loader), and the measurement rules of the student agent file, unchanged.
+It also holds the page path, with the page instructions copied in (students have no skill loader). You write it; what you cannot find on the machines (access, locks, budgets), ask the owner once. Measurement rules stay in the student agent file.
 
 **SCHEDULE.md rows:**
 - queue: `| n | <id> | <what>, <stated length> min | QUEUED / RUNNING / DONE <time>: <result> |`;
@@ -60,10 +62,10 @@ It also holds the page path, with the page instructions copied in (students have
 ## The round, step by step
 
 1. **Goal and files** (round 1; later rounds update them).
-2. **Measure first and do the big literature sweep,** in parallel: a measurement student on the GPU, the sweep yourself with helper agents.
-3. **Choose the lines.**
+2. **Measure first and do the big literature sweep,** in parallel: a measurement student on the machines, the sweep yourself with helper agents.
+3. **Choose the lines,** once the profile and the sweep are in.
 4. **Design the bars** and freeze the test sets.
-5. **Price the round and schedule the machines.**
+5. **Cost the round and schedule the machines.**
 6. **Write the briefs and spawn the students.**
 7. **Run the experiments.**
 8. **Audit while they run.**
@@ -74,18 +76,18 @@ The program ends when the goal's number is reached, the owner stops it, or a rou
 
 ## 1. Goal and files
 
-- The /goal is one sentence with a number and a baseline ("1,000 images a second at the same search quality as today's 91"). For a discovery goal, the number is the measurable answer that would settle the question.
+- The /goal is one sentence with a number and a baseline ("1,000 images a second at the same search quality as today's 91"). If the baseline is unknown, the measurement student's first result fills it. For a discovery goal, the number is the measurable answer that would settle the question.
 - Create the files above and the live page (the `local-artifacts` skill), with the goal at the top of PLAN.md and of the page.
 - Every line must move the goal's number or serve a line that does, or it stops.
 
 ## 2. Measure first, and sweep the literature
 
-**Measurement line**, the round's first student, spawned at once with a brief you write. It delivers:
+**Measurement line**, the round's first student (`S<round>-01`, spawned at once by step 6's rules, with its own mini paper). It delivers:
 
 1. **Calibration per machine:** the A/A spread of the baseline, with clocks, power limit and temperature recorded (locked where the rules file allows).
 2. **A profile of the baseline:** time per stage (a GPU kernel, a model call, a data loader, a training step, a pipeline node, a query), each against its own floor. The floor is the binding resource's limit: bytes ÷ memory bandwidth, operations ÷ peak, rows ÷ disk or network throughput. Untraced runs give the numbers; profiler runs only attribute them.
 3. **Dumps:** the real intermediate data from one run on real inputs, with source and settings recorded. Examples: an LLM's activations and caches, a diffusion model's latents, a search system's query embeddings and candidate lists, a training run's batches and an early checkpoint, a data pipeline's sampled input rows and intermediate tables. Later variants are tested on them first (step 7). Raw dumps stay within the rules file's disk budget and are deleted when the round no longer needs them.
-4. **The test sets, frozen:** the fixed inputs every bar uses (clips, prompts, labelled queries, development and held-out inputs), with the baseline's own results on them.
+4. **The test sets and the baseline's results on them:** the fixed inputs the bars will use (clips, prompts, labelled queries), split into development inputs (for tuning) and held-out inputs (only for reporting). Step 4 freezes them with the bars, and the measurement student runs every new bar on the baseline.
 
 **The big literature sweep**, at the same time: mandatory every round, and yours. It covers hundreds of papers and every other place the answer may already exist: GitHub, model cards, issue trackers, forums (Reddit, Hacker News, Discord logs), blogs and competing projects. Queries come from the goal and from the profile's biggest costs. Split it across **helper agents** (fresh general-purpose agents, one topic cluster or source each) that return lists with verdicts, never across research students; then read the deciding papers and projects yourself. Students receive the verdicts in their briefs. A web search ranks by popularity and misses this month's papers, so query arXiv's own API, newest first:
 
@@ -119,8 +121,8 @@ The program ends when the goal's number is reached, the owner stops it, or a rou
    ```
 4. **Triage in three passes:** titles, then abstracts, then the full HTML (`https://arxiv.org/html/<id>`) of the papers that decide a line (method, numbers, limits).
 5. **Follow citations forward:** `curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:<id>/citations?fields=title,year,externalIds&limit=100"`.
-6. **Check code, weights and competing projects:** GitHub (repositories and their issues), project pages, Hugging Face, and the forums and blogs where practitioners report numbers. Use WebSearch in extended mode, and run the competing projects' own claims through your bars before you believe them.
-7. **Write the verdicts:** one row per paper or project in PLAN.md and the briefs: id, date, link, one-line method, the number that matters, code yes or no, verdict (reuse / already failed / contradicts / gap).
+6. **Check code, weights and competing projects:** GitHub (repositories and their issues), project pages, Hugging Face, and the forums and blogs where practitioners report numbers. Use the most thorough web search you have, and run the competing projects' own claims through your bars before you believe them.
+7. **Write the verdicts:** one row per paper or project in `literature/round-N.json` and the page's Survey section (id, date, link, one-line method, the number that matters, code yes or no, verdict: reuse / already failed / contradicts / gap); briefs and PLAN.md cite the ones that decide a line.
 
 ## 3. Choose the lines
 
@@ -131,7 +133,7 @@ The program ends when the goal's number is reached, the owner stops it, or a rou
 
 ## 4. Design the bars
 
-Write every bar before the first run, run it on the baseline first, and freeze it; change it only by a dated revision. Every bar names **metric · reference · threshold (and where it comes from) · test set · what happens when it fires**, and the direction (≥ or ≤) is stated.
+Write every bar before the first run, have the measurement student run it on the baseline, and freeze it with its test sets; change it only by a dated revision. Every bar names **metric · reference · threshold (and where it comes from) · test set · what happens when it fires**, and the direction (≥ or ≤) is stated.
 
 | goal | bar | metric · reference | threshold (source) | test set · when it fires |
 |---|---|---|---|---|
@@ -150,7 +152,7 @@ Write every bar before the first run, run it on the baseline first, and freeze i
 - **The reference must be able to run.** Where none fits (a size only the new method reaches), use absolute checks plus the trend from where both run.
 - **The spread is about measurements, not outputs.** A deterministic system's outputs repeat exactly, but its timings and sampled scores still have a spread.
 - **Judge the method, not luck:** when something outside the method moves the number (random seeds, sampling, which inputs happen to be easy, an LLM's draft acceptance), the bar uses a measure that removes it (fixed seeds, the frozen input set, per-step time) and only reports the other.
-- **Kill bars are gross defects, physical limits, or no measured gain.** Write the defect list per task. Whoever runs the check (the student, a judge line, or a vision model) opens the outputs, and flags only what is clear against the reference:
+- **Kill bars are gross defects and physical limits** (no gain only means "not shipped"). Write the defect list per task. Whoever runs the check (the student, a judge line, or a vision model) opens the outputs, and flags only what is clear against the reference:
   - **video:** pose off, a missing or extra limb, the face lost, overlays painted in, big timing slips, visible joins;
   - **images:** a missing or extra object or finger, a broken face, garbled text, the subject not there;
   - **LLMs and text:** wrong answers on the frozen check set, broken output format, repetition loops, truncation;
@@ -162,17 +164,17 @@ Write every bar before the first run, run it on the baseline first, and freeze i
   Small score deltas (identity −0.02, sharpness −5 %, perplexity +0.1, top-1 agreement between 90 and 100 %) are reported for ranking, never a kill. A tight numeric bar that kills a working lever is a recurring failure.
 - **Small gains stack.** For speed and cost levers:
   - **Keep** a lever if its outputs are unchanged and it is faster by at least 2× the spread, or simpler with no measured loss.
-  - It is **dead** if slower, if it changes outputs it claimed to keep, or if the code it adds isn't paid for by its gain.
+  - It is **not shipped** if it is slower or its gain doesn't pay for the code it adds, and **dead** if it changes outputs it claimed to keep.
   - Winners stack on one branch, each gated alone, and the stack is measured end to end: ten 1 % levers are 10 %.
 
   For quality levers (a training change, a new method), keep one that beats the baseline on the held-out set by more than the seed spread, and stack them the same way.
 
-## 5. Price the round and schedule the machines
+## 5. Cost the round and schedule the machines
 
-- **Price before spawning:** the GPU hours each line needs on each machine, from its ladder (step 7). The busiest machine sets the round's length. Say the estimate, then cut or reorder until it is acceptable, and give each line a **hold budget**.
+- **Cost before spawning:** the machine hours each line needs on each machine, from its ladder (step 7). The busiest machine sets the round's length. Say the estimate, then cut or reorder until it is acceptable, and give each line a **hold budget**.
 - **Critical path first:** side lines pause when they compete for a critical machine. A paused student keeps its context and resumes by message.
 - **CPU before GPU:** whatever the dumps, the code or arithmetic can decide is decided without a hold. CPU work and builds run on the cores the rules file reserves for them, so they never compete with a hold.
-- **Holds:** one at a time per machine, ≤ 15 minutes, booked by the student in SCHEDULE.md with the stated length, stopped as soon as the question is answered. A final table may book a longer hold, stated in its row. A job longer than a hold (a training run, a full data pass) checkpoints, books consecutive holds stated up front, and resumes from its last checkpoint; its early checkpoints are rungs of its ladder. You order the queue by the critical path. When a hold ends, the next ready student takes the lock at once: an idle GPU is your failure.
+- **Holds:** one at a time per machine, ≤ 15 minutes, booked by the student in SCHEDULE.md with the stated length, stopped as soon as the question is answered. A final table may book a longer hold, stated in its row. A job longer than a hold (a training run, a full data pass) checkpoints and resumes from its last checkpoint; its early checkpoints are rungs of its ladder. You order the queue by the critical path. When a hold ends, the next ready student takes the lock at once: an idle machine is your failure. A job longer than one hold books its consecutive holds in one row, up front.
 - **Pay expensive setup once:** one expensive input carries all the probes (a long document holding every question, one video holding every test moment), and its processed state is reused. One model load serves several variants. A scaled-down input (1 % of the rows, a smaller model, a few hundred steps) tests the pipeline before the full size.
 - **Two or more different machines:**
   - What depends on the machine (speed, memory, tuning) is measured on each one.
@@ -185,7 +187,7 @@ Write every bar before the first run, run it on the baseline first, and freeze i
   - the line's goal and price;
   - what is known (numbers, paths, links) and the prior-work verdicts;
   - the files the student claims;
-  - milestones and E1, the cheapest test that can kill the line (usually a replay on the dumps);
+  - milestones, E1 (usually a replay on the dumps) and the line's ladder (step 7);
   - the bars from step 4, with their test sets;
   - the hold budget;
   - the stop rule: the deliverable done or a kill bar fired, with the hold budget as a cap (reaching it means report and ask);
@@ -194,7 +196,7 @@ Write every bar before the first run, run it on the baseline first, and freeze i
   - a persona fitting the line ("a senior GPU kernel engineer", "a senior diffusion-model researcher", "a senior search-infrastructure engineer");
   - a model: Sonnet when the brief lists the exact experiments, Opus at effort high when the student must design them;
   - an id `S<round>-<nn>` in spawn order, never reused or renumbered, used everywhere (page, PLAN.md, SCHEDULE.md, LOG.md, card ids).
-- **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing.
+- **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing. The student creates its own page section; you add its index block. A judge line is briefed like any other: its deliverable is the defect check on every variant's outputs.
 - **Talking to students:**
   - steer with a dated revision appended to the brief plus one message pointing at it (SendMessage);
   - pause or stop with a message, or TaskStop for a student that keeps waking on leftover waiters;
@@ -219,10 +221,11 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
 | does a video or image pipeline change break outputs? | 2 seconds of one clip at few steps, checked for gross defects | the 5 frozen clips at full steps | full-length renders |
 | does a training change help? | a few hundred steps on a small model: loss falls, no NaN | the full model to an early checkpoint vs the baseline's curve at the same step | full runs, 3 seeds each |
 | is a data-pipeline change correct and faster? | 1 % sample, row-level diff vs the baseline | one full shard, diff and rows per second | the whole dataset |
+| does an effect exist (a discovery question)? | a cheap probe on existing data or dumps | one controlled experiment on the development inputs | a replication on the held-out inputs |
 
 - **A replay can kill but never prove speed.** A component slower alone is not faster in the system. One faster alone can still slow the whole (cache contention, extra launches or calls, competing work on the same device), so a speed claim needs one end-to-end run on real inputs.
-- **Repeats:** if the effect is above 5× the A/A spread, one A/B pair is enough. Otherwise interleave A/B pairs in random order after one warm-up: at least 2 pairs, adding pairs until every pair orders the same way, at most 4. Report the median and the range. Long runs that cannot be interleaved (training) compare seed sets instead of A/B pairs, and deterministic outputs compare by exact diff. The student agent file holds the measurement details.
-- **Finalists only** (at most 2 per question) get the full protocol on every machine. Every matrix cell holds a measurement, or the rung, arithmetic or load attempt that ended the variant.
+- **Repeats:** if the effect is above 5× the A/A spread, one A/B pair is enough. Otherwise interleave A/B pairs in random order after one warm-up: at least 2 pairs, adding pairs until every pair orders the same way, at most 4; if they still disagree, the result is "no measurable difference". Report the median and the range. Long runs that cannot be interleaved (training) compare seed sets instead of A/B pairs, and deterministic outputs compare by exact diff. The student agent file holds the measurement details.
+- **Finalists only** (at most 2 per question) get the full protocol on every machine. The matrix lives in the page's Program section, one table per machine; students fill their rows, and every cell holds a measurement, or the rung, arithmetic or load attempt that ended the variant.
 
 ## 8. Audit while they run
 
@@ -242,18 +245,18 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
   - faster on one, slower on another → both paths stay in one code base, picked at runtime by a hardware property (cache size, core count, supported number formats) or a measured per-machine table;
   - each path is gated on its own machine;
   - never fork the code per machine.
-- **The pull request** lists every change, its gates and benchmarks per machine, and which machine runs which path. The owner merges.
+- **The deliverable** (a pull request, a recipe, a dataset, a report) lists every change, its gates and measurements per machine, and which machine runs which path. The owner accepts it.
 
 ## 10. Close the round
 
 - Update PLAN.md (proven, failed with the measured reason, parked) and the page's tables and index.
-- Save owner decisions and durable lessons in the assistant's persistent memory, not details the files already hold.
+- Save owner decisions and durable lessons in your persistent memory if you have one (otherwise in PLAN.md), not details the files already hold.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context. It reads the page as a computer-science graduate outside the field and lists everything missing, unexplained or badly worded. Fix what is serious; at most 3 passes.
 - Build the next round's lines from what this one taught, and go back to step 2.
 
 ## The page
 
-One live page (default: the `local-artifacts` skill; the rules file copies its essentials for students: the `Section`, `Gallery`, `Media`, `Code` and `Note` components, the page check, and targeted edits only). The order is fixed:
+One live page (default: the `local-artifacts` skill, whose essentials the rules file copies for students: the `Section`, `Gallery`, `Media`, `Code` and `Note` components, the page check, targeted edits only; without it, one Markdown file with the same sections). The order is fixed:
 
 1. **Index:** a link line to the next three sections, then one Markdown block per student in id order (not a table). Add a block the moment you spawn a student; rewrite its result line when a number lands.
 2. **Watch first:** the latest full outputs side by side: renders, answers, loss curves, output diffs, or the headline numbers when nothing is visual.
