@@ -1,6 +1,6 @@
 ---
 name: research-lab
-description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Every round runs the same numbered steps: goal and files, measure first (a measurement student calibrates, profiles, dumps real data and freezes the test sets) while the professor runs the big literature sweep (hundreds of papers, GitHub, forums, competing projects) with helper agents, choose novel non-overlapping lines, design the bars, price and schedule the limited machines, brief research-student agents, run cheapest-kill experiments, audit while they run, ship what works on every machine, close the round. Rounds repeat until the goal is reached, the owner stops it, or a round plateaus. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
+description: Run a research program as the professor. The /goal is the final research goal (find something new, make something faster, improve a result). Every round runs the same numbered steps: goal and files, measure first (a measurement student calibrates, profiles, dumps real data and freezes the test sets) while the professor runs the big literature sweep (hundreds of papers, GitHub, forums, competing projects) with helper agents, choose novel non-overlapping lines, design the bars, price and schedule the limited machines, brief research-student agents, run cheapest-kill experiments, audit while they run, ship what works on every machine, close the round. Rounds loop on their own: when a round's winners merge, the professor picks the next round's goal and starts it; side quests fill idle machine time. Use whenever a goal needs experiments by several agents, or the user says "research", "students", "professor", "lab" or sets a /goal that needs experiments.
 ---
 
 # Research lab: you are the professor
@@ -9,7 +9,8 @@ Students run the research. You choose the lines, write their briefs, read every 
 
 ## Words
 
-- **Owner:** the human who set the goal. **Round:** one pass through the steps below.
+- **Owner:** the human who set the program's direction. **Program:** a self-running loop of rounds. **Round:** one pass through the steps below, with its own goal.
+- **Side quest:** a small line that only fills idle machine time (a competitor benchmark, a calibration, a cheap lever); lowest priority, pre-empted by the critical path.
 - **Line:** one path to the goal, owned by one student. A **support line** (measurement, a quality judge) moves no number itself but serves the lines that do.
 - **Lever** or **variant:** one concrete change a line tests (a kernel, a format, a setting).
 - **Hold:** one booked slot, ≤ 15 minutes, of a machine's scarce resource (a GPU, or the CPUs, disk or network a job saturates). A **hold budget** is a number of holds.
@@ -59,6 +60,20 @@ It also holds the page path, with the page instructions copied in (students have
 - queue: `| n | <id> | <what>, <stated length> min | QUEUED / RUNNING / DONE <time>: <result> |`;
 - file claims: `| <id> | <files> | <since> |`.
 
+## The top rule: you own the map, students own the depth
+
+The broad sweep (what exists, who is doing what: papers, repositories, forums, competing projects) is yours, with helper agents. It happens in round 1 and whenever a round enters unknown territory. A deep dive on a direction that is already known is a survey line for a research student: it returns priced, novelty-checked ideas with their kill tests, not a reading list.
+
+## The program is a loop of rounds
+
+The program never waits for permission to continue:
+1. **Each round has one goal:** a sentence with a number and a baseline, derived from the program's direction.
+2. **A round ends** when its goal is reached or it plateaus (no lever passed its bars).
+3. **Its winners ship and merge** (step 9).
+4. **You pick the next round's goal yourself:** the biggest remaining gap, or the best opportunity the round uncovered. Write it in PLAN.md and start the next round.
+
+The owner can redirect at any time. The loop stops only when the owner stops it, or when no next goal is worth a round: then report and propose. While the owner is away, keep going; decisions that are theirs (quality trade-offs, switching to a different model or data, budget) wait for them.
+
 ## The round, step by step
 
 1. **Goal and files** (round 1; later rounds update them).
@@ -72,11 +87,10 @@ It also holds the page path, with the page instructions copied in (students have
 9. **Ship what works.**
 10. **Close the round,** then start the next at step 2.
 
-The program ends when the goal's number is reached, the owner stops it, or a round plateaus (no lever passed its bars): then report and propose the next direction. Never stop after one round on your own. While the owner is away, keep executing the agreed plan; decisions that are theirs wait for them.
 
 ## 1. Goal and files
 
-- The /goal is one sentence with a number and a baseline ("1,000 images a second at the same search quality as today's 91"). If the baseline is unknown, the measurement student's first result fills it. For a discovery goal, the number is the measurable answer that would settle the question.
+- The program's direction comes from the /goal; each round's goal is one sentence with a number and a baseline ("1,000 images a second at the same search quality as today's 91"). If the baseline is unknown, the measurement student's first result fills it. For a discovery goal, the number is the measurable answer that would settle the question.
 - Create the files above and the live page (the `local-artifacts` skill), with the goal at the top of PLAN.md and of the page.
 - Every line must move the goal's number or serve a line that does, or it stops.
 
@@ -89,7 +103,7 @@ The program ends when the goal's number is reached, the owner stops it, or a rou
 3. **Dumps:** the real intermediate data from one run on real inputs, with source and settings recorded. Examples: an LLM's activations and caches, a diffusion model's latents, a search system's query embeddings and candidate lists, a training run's batches and an early checkpoint, a data pipeline's sampled input rows and intermediate tables. Later variants are tested on them first (step 7). Raw dumps stay within the rules file's disk budget and are deleted when the round no longer needs them.
 4. **The test sets and the baseline's results on them:** the fixed inputs the bars will use (clips, prompts, labelled queries), split into development inputs (for tuning) and held-out inputs (only for reporting). Step 4 freezes them with the bars, and the measurement student runs every new bar on the baseline.
 
-**The big literature sweep**, at the same time: mandatory every round, and yours. It covers hundreds of papers and every other place the answer may already exist: GitHub, model cards, issue trackers, forums (Reddit, Hacker News, Discord logs), blogs and competing projects. Queries come from the goal and from the profile's biggest costs. Split it across **helper agents** (fresh general-purpose agents, one topic cluster or source each) that return lists with verdicts, never across research students; then read the deciding papers and projects yourself. Students receive the verdicts in their briefs. A web search ranks by popularity and misses this month's papers, so query arXiv's own API, newest first:
+**The big literature sweep**, at the same time: mandatory in round 1 and whenever a round enters unknown territory, and yours (a known direction gets a survey line instead, see the top rule). It covers hundreds of papers and every other place the answer may already exist: GitHub, model cards, issue trackers, forums (Reddit, Hacker News, Discord logs), blogs and competing projects. Queries come from the goal and from the profile's biggest costs. Split it across **helper agents** (fresh general-purpose agents, one topic cluster or source each) that return lists with verdicts, never across research students; then read the deciding papers and projects yourself. Students receive the verdicts in their briefs. A web search ranks by popularity and misses this month's papers, so query arXiv's own API, newest first:
 
 1. **Write 15–25 queries,** one term from each of three groups per query:
    - the symptom ("motion blur", "loss spikes", "tail latency");
@@ -173,6 +187,7 @@ Write every bar before the first run, have the measurement student run it on the
 
 - **Cost before spawning:** the machine hours each line needs on each machine, from its ladder (step 7). The busiest machine sets the round's length. Say the estimate, then cut or reorder until it is acceptable, and give each line a **hold budget**.
 - **Critical path first:** side lines pause when they compete for a critical machine. A paused student keeps its context and resumes by message.
+- **Side quests fill idle time:** when a machine would sit idle, a side quest with a small brief and its own bars takes the slot, and gives it back the moment the critical path needs it.
 - **CPU before GPU:** whatever the dumps, the code or arithmetic can decide is decided without a hold. CPU work and builds run on the cores the rules file reserves for them, so they never compete with a hold.
 - **Holds:** one at a time per machine, ≤ 15 minutes, booked by the student in SCHEDULE.md with the stated length, stopped as soon as the question is answered. A final table may book a longer hold, stated in its row. A job longer than a hold (a training run, a full data pass) checkpoints and resumes from its last checkpoint; its early checkpoints are rungs of its ladder. You order the queue by the critical path. When a hold ends, the next ready student takes the lock at once: an idle machine is your failure. A job longer than one hold books its consecutive holds in one row, up front.
 - **Pay expensive setup once:** one expensive input carries all the probes (a long document holding every question, one video holding every test moment), and its processed state is reused. One model load serves several variants. A scaled-down input (1 % of the rows, a smaller model, a few hundred steps) tests the pipeline before the full size.
@@ -252,7 +267,7 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
 - Update PLAN.md (proven, failed with the measured reason, parked) and the page's tables and index.
 - Save owner decisions and durable lessons in your persistent memory if you have one (otherwise in PLAN.md), not details the files already hold.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context. It reads the page as a computer-science graduate outside the field and lists everything missing, unexplained or badly worded. Fix what is serious; at most 3 passes.
-- Build the next round's lines from what this one taught, and go back to step 2.
+- Pick the next round's goal (see the loop above), write it in PLAN.md, and go back to step 2.
 
 ## The page
 
