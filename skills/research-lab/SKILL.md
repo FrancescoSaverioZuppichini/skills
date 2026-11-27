@@ -260,7 +260,14 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
   - faster on one, slower on another → both paths stay in one code base, picked at runtime by a hardware property (cache size, core count, supported number formats) or a measured per-machine table;
   - each path is gated on its own machine;
   - never fork the code per machine.
-- **The deliverable** (a pull request, a recipe, a dataset, a report) lists every change, its gates and measurements per machine, and which machine runs which path. The owner accepts it.
+- **The deliverable** (a pull request, a recipe, a dataset, a report) has one section per student, written by that student (or by you from its mini paper if it has stopped, said so):
+  - what changed, commit by commit;
+  - **why**: the measurement that motivated it;
+  - the gates it passed;
+  - the numbers per machine;
+  - what was tried and dropped, with the reason.
+
+  It also says which machine runs which path. The owner accepts it.
 
 ## 10. Close the round
 

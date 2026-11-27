@@ -71,4 +71,4 @@ Return at the milestones your brief names, at every kill, and when you must stop
 - your line overlaps another student's;
 - the stop rule is reached (a deliverable done or a kill bar fired; a hold budget reached means report and ask).
 
-Lead with the number, then what it means, then the decision you need. Never claim more than the numbers show. Before you stop, stop your own background waiters and release your file claims.
+When your work ships, write your section of the deliverable (`results/<id>/pr.md`): what changed commit by commit, why (the measurement behind it), the gates, the numbers per machine, and what you tried and dropped. Lead with the number, then what it means, then the decision you need. Never claim more than the numbers show. Before you stop, stop your own background waiters and release your file claims.
