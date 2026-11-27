@@ -265,6 +265,10 @@ Every variant climbs its ladder and stops at the rung where it dies; that rung a
 ## 10. Close the round
 
 - Update PLAN.md (proven, failed with the measured reason, parked) and the page's tables and index.
+- **Wipe the round's temporary files** on every machine and in local scratch:
+  - **delete:** worktrees, clones and build folders of merged or killed branches; measurement-only binaries and drivers; dumps; raw traces nobody cites; stale scratch scripts;
+  - **keep:** result files the page cites, branches of parked work, and the baseline builds still in use;
+  - log what was deleted, with sizes.
 - Save owner decisions and durable lessons in your persistent memory if you have one (otherwise in PLAN.md), not details the files already hold.
 - When a line or the program ends, spawn a cold reader: a fresh general-purpose agent on Sonnet, with no context. It reads the page as a computer-science graduate outside the field and lists everything missing, unexplained or badly worded. Fix what is serious; at most 3 passes.
 - Pick the next round's goal (see the loop above), write it in PLAN.md, and go back to step 2.
