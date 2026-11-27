@@ -13,7 +13,7 @@ The owner gives zero input. Claude Code's safety checks still stop some commands
 - writes to `.git/` or to system paths;
 - a download piped into a shell.
 
-Prefer a short script file run with `python3 script.py` or `bash script.sh` over long one-liners. If the owner ever has to click "Yes" for you, that is a bug in your command: rewrite it.
+Prefer a short script file run with `python3 script.py` or `bash script.sh` over long one-liners. Write each script on the machine that runs it, inside the project's folders (on a remote machine, an ssh heredoc into your results folder), never in the professor's local folders. If the owner ever has to click "Yes" for you, that is a bug in your command: rewrite it the same minute and log the slip.
 
 ## Before you start
 - **The rules file** (`briefs/HOUSE.md` or the file the professor names): how to reach each machine, locks, reserved CPU cores, the page path and how to edit it, the project log. It overrides anything here.
