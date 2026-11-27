@@ -211,12 +211,18 @@ Write every bar before the first run, have the measurement student run it on the
   - a persona fitting the line ("a senior GPU kernel engineer", "a senior diffusion-model researcher", "a senior search-infrastructure engineer");
   - a model: Sonnet when the brief lists the exact experiments, Opus at effort high when the student must design them;
   - an id `S<round>-<nn>` in spawn order, never reused or renumbered, used everywhere (page, PLAN.md, SCHEDULE.md, LOG.md, card ids).
+- **Token budget:** every tool call resends the agent's whole context, so an agent's cost is its context × its calls, and long-lived agents dominate the bill.
+  - One agent, one bounded deliverable: it reports and ends. No lead that integrates for hours; integrating a milestone is its own bounded job for a fresh agent that reads the branch and the notes.
+  - No background waiters inside an agent (every wake re-reads the whole context): block on the lock inside one command, or end and be resumed.
+  - Quiet tools: few, large tool calls; read with `tail`, `grep` and counts, never whole logs or large files.
+  - Sonnet for anything specified (ports, packages, measurements, integration); Opus only where the student must design.
+  - A stopped agent resumes from its saved work by message; never respawn a job that exists.
 - **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing. The student creates its own page section; you add its index block. A judge line is briefed like any other: its deliverable is the defect check on every variant's outputs.
 - **Talking to students:**
   - steer with a dated revision appended to the brief plus one message pointing at it (SendMessage);
   - pause or stop with a message, or TaskStop for a student that keeps waking on leftover waiters;
   - resume a stopped student by messaging it (its context is kept);
-  - watch the logs and queues with a Monitor or a timer job.
+  - read the logs and queues on demand; a Monitor wakes you on every event, so use one only when few events are expected.
 - **No approval prompts:** the rules file tells students to quote paths as `"${P:?}"/x` or write them literally, and to put anything longer than a few lines in a script file. Deleting or moving on an unquoted or possibly-empty variable path, `rm -rf` on globs or `~`, and piping a download into a shell can stop for the owner's approval, and a prompt the owner has to answer is a bug in the student's command.
 
 ## 7. Run the experiments
