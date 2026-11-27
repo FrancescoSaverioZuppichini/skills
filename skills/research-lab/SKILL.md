@@ -214,7 +214,7 @@ Write every bar before the first run, have the measurement student run it on the
   - what to report.
 - **Students** are always the `research-student` agent type; audits and cold reads use a fresh general-purpose agent. Each spawn gets:
   - a persona fitting the line ("a senior GPU kernel engineer", "a senior diffusion-model researcher", "a senior search-infrastructure engineer");
-  - a model: **Sonnet by default** (every port, package, measurement, integration and review); Opus at effort high only when the student must design. A Sonnet prompt is complete and short: who it is, the files to read, its worktree and scope, the acceptance with numbers, the GPU and lock rules, the shell rules, and the report's length;
+  - a model: **Sonnet by default** (every port, package, measurement, integration and review); an Opus student at effort high only when the job is really hard. That means designing a line, a new kernel or algorithm with no reference to port, or a numerics hunt nobody can specify step by step. The brief says in one line why it needs Opus. A Sonnet prompt is complete and short: who it is, the files to read, its worktree and scope, the acceptance with numbers, the GPU and lock rules, the shell rules, and the report's length;
   - an id `S<round>-<nn>` in spawn order, never reused or renumbered, used everywhere (page, PLAN.md, SCHEDULE.md, LOG.md, card ids).
 - **Token budget:** every tool call resends the agent's whole context, so an agent's cost is its context × its calls, and long-lived agents dominate the bill.
   - One agent, one bounded deliverable: it reports and ends. No lead that integrates for hours; integrating a milestone is its own bounded job for a fresh agent that reads the branch and the notes.
