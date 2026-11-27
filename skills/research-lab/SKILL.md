@@ -222,6 +222,16 @@ Write every bar before the first run, have the measurement student run it on the
   - Quiet tools: few, large tool calls; read with `tail`, `grep` and counts, never whole logs or large files.
   - Sonnet for anything specified (ports, packages, measurements, integration, unslop reviews); Opus only where the student must design.
   - A stopped agent resumes from its saved work by message; never respawn a job that exists.
+- **The Sonnet prompt** (the shape that works). One bounded job, written so Sonnet needs no judgement calls:
+  1. **Role and job:** who it is, the one deliverable, "token-lean, report in ≤ N lines".
+  2. **Read:** the exact files, in order (rules file, plan section, brief, the headers it touches).
+  3. **Where:** its worktree and branch, the files it owns, the files it must not touch (another job edits them).
+  4. **Do:** numbered steps with the facts it can't guess (paths, shapes, measured numbers, known traps).
+  5. **Acceptance:** numeric bars and where they come from, the test it breaks once, every GPU it must run on.
+  6. **Machine rules:** locks, hold length, booking, how branches move between machines, shell rules.
+  7. **Finish:** commit, log line, report contents.
+
+  If a step needs a choice the brief doesn't settle, settle it in the prompt or give that piece to Opus.
 - **The spawn prompt** says only who the student is and which files to read (rules file, PLAN.md, SCHEDULE.md, its brief), so a restart costs nothing. The student creates its own page section; you add its index block. A judge line is briefed like any other: its deliverable is the defect check on every variant's outputs.
 - **Talking to students:**
   - steer with a dated revision appended to the brief plus one message pointing at it (SendMessage);
