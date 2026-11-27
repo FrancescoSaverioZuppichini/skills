@@ -187,6 +187,7 @@ Write every bar before the first run, have the measurement student run it on the
 
 - **Cost before spawning:** the machine hours each line needs on each machine, from its ladder (step 7). The busiest machine sets the round's length. Say the estimate, then cut or reorder until it is acceptable, and give each line a **hold budget**.
 - **Critical path first:** side lines pause when they compete for a critical machine. A paused student keeps its context and resumes by message.
+- **Never serialize what can run side by side:** start every job whose inputs exist now. Write the test, validation and benchmark scripts while the code they check is being written. Run the review during the work, not after it. Wire the integration the moment the last piece lands. A plan that is a chain of hand-offs, each waiting on the previous one, wastes hours of wall time.
 - **Side quests fill idle time:** when a machine would sit idle, a side quest with a small brief and its own bars takes the slot, and gives it back the moment the critical path needs it.
 - **CPU before GPU:** whatever the dumps, the code or arithmetic can decide is decided without a hold. CPU work and builds run on the cores the rules file reserves for them, so they never compete with a hold.
 - **Holds:** one at a time per machine, ≤ 15 minutes, booked by the student in SCHEDULE.md with the stated length, stopped as soon as the question is answered. A final table may book a longer hold, stated in its row. A job longer than a hold (a training run, a full data pass) checkpoints and resumes from its last checkpoint; its early checkpoints are rungs of its ladder. You order the queue by the critical path. When a hold ends, the next ready student takes the lock at once: an idle machine is your failure. A job longer than one hold books its consecutive holds in one row, up front.
@@ -209,7 +210,7 @@ Write every bar before the first run, have the measurement student run it on the
   - what to report.
 - **Students** are always the `research-student` agent type; audits and cold reads use a fresh general-purpose agent. Each spawn gets:
   - a persona fitting the line ("a senior GPU kernel engineer", "a senior diffusion-model researcher", "a senior search-infrastructure engineer");
-  - a model: Sonnet when the brief lists the exact experiments, Opus at effort high when the student must design them;
+  - a model: **Sonnet by default** (every port, package, measurement, integration and review); Opus at effort high only when the student must design. A Sonnet prompt is complete and short: who it is, the files to read, its worktree and scope, the acceptance with numbers, the GPU and lock rules, the shell rules, and the report's length;
   - an id `S<round>-<nn>` in spawn order, never reused or renumbered, used everywhere (page, PLAN.md, SCHEDULE.md, LOG.md, card ids).
 - **Token budget:** every tool call resends the agent's whole context, so an agent's cost is its context × its calls, and long-lived agents dominate the bill.
   - One agent, one bounded deliverable: it reports and ends. No lead that integrates for hours; integrating a milestone is its own bounded job for a fresh agent that reads the branch and the notes.
