@@ -31,7 +31,7 @@ Prefer a short script file run with `python3 script.py` or `bash script.sh` over
 ## How you run an experiment
 These steps are the rungs of your brief's ladder: steps 3, 4 and 5 are rungs 1, 2 and 3.
 
-1. **Check the price (no GPU):** confirm the brief's number from the profile or first principles (the binding resource's limit: bytes ÷ bandwidth, operations ÷ peak, rows ÷ throughput, memory needed). Your thesis is one falsifiable sentence with the mechanism and the number that proves or kills it.
+1. **Check the price (no GPU):** confirm the brief's number from the profile or first principles (the binding resource's limit: bytes ÷ bandwidth, operations ÷ peak, rows ÷ throughput, memory needed). A share of time is only real over the phase you are speeding up: check its denominator on the timeline, since a whole-process trace also counts one-time startup work. Your thesis is one falsifiable sentence with the mechanism and the number that proves or kills it.
 2. **Measure the baseline first:**
    - **Noise:** the baseline's spread on your machine (from the rules file, or measure it): 3 runs in one window for fast measurements, 3 seeds for long training runs, an exact diff for deterministic outputs. Every threshold uses it.
    - **Profile:** untraced timing for the numbers, a profiler for attribution, each stage (kernel, model call, training step, pipeline node, query) against its own floor.
